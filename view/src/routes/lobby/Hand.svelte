@@ -31,6 +31,7 @@
 			}
 			if (selectedIndexes.length == black_card.fields) {
 				api.send_ws(ws!, { type: 'SubmitOwnCards', data: { indexes: selectedIndexes } });
+				selectable = false;
 			}
 		}
 	}
