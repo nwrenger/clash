@@ -22,7 +22,7 @@
 	<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-black/10"></div>
 	<!-- Card content -->
 	<div class="relative z-10 flex h-full flex-col items-center justify-center p-2">
-		<span class="{text_classes} text-sm font-extrabold text-wrap break-normal">
+		<span class="{text_classes} text-sm font-bold break-normal">
 			{card.text}
 		</span>
 	</div>

@@ -270,6 +270,14 @@ impl Lobby {
             fetched.save(cache.clone()).await?;
 
             let decks: Vec<DeckInfo> = Deck::get_all_cached_info(cache).await?;
+
+            // update settings
+            {
+                let mut guard = self.state.write().await;
+                guard.settings.decks = decks.clone();
+            }
+
+            // send update
             self.touch().await;
             self.emit_global(ServerEvent::UpdateDecks { decks })
         } else {
