@@ -11,7 +11,7 @@
 		const id: api.Uuid = crypto.randomUUID();
 		const data = await handle_promise(api.create_lobby(name, id));
 		$own = { lobby_id: data.id, id, name };
-		goto(`/lobby?lobby_id=${data.id}`);
+		goto(`/lobby?id=${data.id}`);
 	}
 </script>
 

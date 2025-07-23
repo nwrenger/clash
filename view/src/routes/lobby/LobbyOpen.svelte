@@ -32,7 +32,7 @@
 	let { ws, lobby_state, lobby_id, own_id }: Props = $props();
 
 	let isHost = $derived(lobby_state?.players[own_id]?.is_host || false);
-	let lobbyUrl = $derived(`${page.url.origin}/lobby?lobby_id=${lobby_id}`);
+	let lobbyUrl = $derived(`${page.url.origin}/lobby?id=${lobby_id}`);
 
 	function kick(own_id: api.Uuid, player_id: api.Uuid) {
 		if (own_id != player_id) api.send_ws(ws!, { type: 'Kick', data: { kicked: player_id } });
@@ -90,10 +90,7 @@
 							{#snippet activeChild()}<EyeOff size="20" />{/snippet}
 						</Switch>
 						<input class="input {hide_url ? 'blur-sm' : ''}" value={lobbyUrl} readonly />
-						<CopyButton
-							class="btn preset-filled-secondary-500"
-							text="{page.url.host}/lobby?lobby_id={lobby_id}"
-						>
+						<CopyButton class="btn preset-filled-secondary-500" text={lobbyUrl}>
 							{#snippet child({ copied })}
 								{#if copied}
 									<ClipboardCheck /> Copied

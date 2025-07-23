@@ -42,7 +42,7 @@
 	});
 
 	onMount(() => {
-		lobby_id = page.url.searchParams.get('lobby_id') || '';
+		lobby_id = page.url.searchParams.get('id') || '';
 		logged_in = $own?.lobby_id == lobby_id;
 		own_id = $own && logged_in ? $own.id : crypto.randomUUID();
 		own_name = $own && logged_in ? $own.name : '';
