@@ -39,7 +39,7 @@
 
 <!-- Container fixed at bottom with soft gradient overlay -->
 <div
-	class="fixed bottom-0 left-0 z-50 w-full bg-gradient-to-t from-black/60 via-transparent to-transparent py-6 backdrop-blur-sm {disabled
+	class="fixed bottom-0 left-0 z-50 w-full bg-gradient-to-t from-black/60 via-transparent to-transparent py-6 {disabled
 		? 'opacity-60'
 		: ''}"
 >
