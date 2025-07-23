@@ -9,7 +9,7 @@ use tokio::time::Instant;
 use uuid::Uuid;
 
 use crate::error::{Error, Result};
-use crate::game::lobby::{GamePhase, Lobby};
+use crate::game::lobby::Lobby;
 
 pub mod ws;
 
@@ -35,15 +35,9 @@ impl ServerState {
         let mut to_remove = Vec::new();
 
         for (&id, lobby) in read_guard.iter() {
-            let phase = {
-                let state_guard = lobby.state.read().await;
-                state_guard.phase
-            };
-            if matches!(phase, GamePhase::LobbyOpen | GamePhase::GameOver) {
-                let last = *lobby.last_activity.read().await;
-                if now.duration_since(last) > Duration::from_secs(60 * 60) {
-                    to_remove.push(id);
-                }
+            let last = *lobby.last_activity.read().await;
+            if now.duration_since(last) > Duration::from_secs(60 * 60) {
+                to_remove.push(id);
             }
         }
         drop(read_guard);
