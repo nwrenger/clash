@@ -3,7 +3,7 @@
 	import api from '$lib/api';
 	import { own } from '$lib/state';
 	import { show_error, toaster } from '$lib/toaster';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import LobbyOpen from './LobbyOpen.svelte';
 	import TopBar from './TopBar.svelte';
 	import Hand from './Hand.svelte';
@@ -12,11 +12,10 @@
 	import Joining from './Joining.svelte';
 	import GameOver from './GameOver.svelte';
 
-	let lobby_id = page.url.searchParams.get('lobby_id') || '';
-
-	let logged_in = $own?.lobby_id == lobby_id;
-	let own_id: api.Uuid = $state($own && logged_in ? $own.id : crypto.randomUUID());
-	let own_name = $state($own && logged_in ? $own.name : '');
+	let lobby_id: string = $state('');
+	let logged_in: boolean = $state(false);
+	let own_id: api.Uuid = $state(crypto.randomUUID());
+	let own_name = $state('');
 
 	let ws: WebSocket | undefined = $state();
 	let connected = $state(false);
@@ -42,7 +41,14 @@
 		ws?.close();
 	});
 
-	connect();
+	onMount(() => {
+		lobby_id = page.url.searchParams.get('lobby_id') || '';
+		logged_in = $own?.lobby_id == lobby_id;
+		own_id = $own && logged_in ? $own.id : crypto.randomUUID();
+		own_name = $own && logged_in ? $own.name : '';
+
+		connect();
+	});
 
 	function connect() {
 		ws = api.connect_ws(lobby_id as api.Uuid);

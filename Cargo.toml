@@ -42,6 +42,7 @@ tower-http = { version = "0.6.6", features = [
     "trace",
     "cors",
 ], default-features = false }
+openssl = { version = "0.10.73", features = ["vendored"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 uuid = { version = "1.17.0", features = ["v4", "serde"] }
