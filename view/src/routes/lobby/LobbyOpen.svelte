@@ -145,7 +145,10 @@
 				{#if isHost}
 					<hr class="hr" />
 					<div class="flex w-full items-center justify-center space-x-2">
-						<button class="btn preset-filled-primary-500" onclick={start_game}>Start Game</button>
+						<button
+							class="btn preset-filled-primary-500 flex w-full items-center justify-center sm:w-auto"
+							onclick={start_game}>Start Game</button
+						>
 					</div>
 				{/if}
 			</Tabs.Panel>
