@@ -120,7 +120,7 @@ impl Lobby {
     /// Emit a private event
     pub async fn emit_private(&self, player_id: &Uuid, event: PrivateServerEvent) -> Result<()> {
         let map = self.private.read().await;
-        if let Some(tx) = map.get(&player_id) {
+        if let Some(tx) = map.get(player_id) {
             tx.send(event)?;
             Ok(())
         } else {
@@ -287,7 +287,7 @@ impl Lobby {
 
     /// Start the game on a different thread
     pub async fn start_game(self: &Arc<Self>, player_id: &Uuid) -> Result<()> {
-        if self.is_host(&player_id).await
+        if self.is_host(player_id).await
             && self.has_phase(GamePhase::LobbyOpen).await
             && self.min_players().await
             && self.min_decks().await
