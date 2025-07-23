@@ -43,7 +43,7 @@
 		: ''}"
 >
 	<div class="flex h-full w-full items-center justify-center">
-		<div class="flex items-center space-x-4 overflow-x-scroll px-4 pt-9 pb-2 perspective-distant">
+		<div class="flex items-center space-x-4 overflow-x-auto px-4 pt-9 pb-2 perspective-distant">
 			{#each cards as card, index}
 				<Card
 					{card}
