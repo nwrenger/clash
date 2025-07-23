@@ -16,7 +16,7 @@
 </script>
 
 <div class="grid w-full grid-cols-[1fr_auto]">
-	<div class="flex max-w-full gap-2 overflow-x-scroll px-2 py-1">
+	<div class="flex max-w-full gap-2 overflow-x-auto px-2 py-1">
 		{#each sortedEntries(lobby_state?.players) as [id, player]}
 			<span
 				class="card {id === own_id ? 'preset-filled-tertiary-500' : 'preset-filled'} {winner === id
