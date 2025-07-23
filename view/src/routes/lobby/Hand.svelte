@@ -30,7 +30,6 @@
 				selectedIndexes.push(index);
 			}
 			if (selectedIndexes.length == black_card.fields) {
-				console.log(selectedIndexes);
 				api.send_ws(ws!, { type: 'SubmitOwnCards', data: { indexes: selectedIndexes } });
 			}
 		}

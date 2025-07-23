@@ -35,7 +35,7 @@
 	let isFinished = $derived(lobby_state?.phase == 'RoundFinished');
 	let isGaming = $derived(isSubmitting || isJudging || isFinished);
 	let isOver = $derived(lobby_state?.phase == 'GameOver');
-	let time = $derived.by(getTime);
+	let time: { self?: number } = $state({});
 
 	onDestroy(() => {
 		ws?.close();
@@ -70,6 +70,7 @@
 					lobby_state = msg.data;
 					break;
 				case 'StartRound':
+					set_phase('Submitting');
 					round += 1;
 
 					// reset everything
@@ -83,7 +84,6 @@
 
 					// apply the send state
 					if (lobby_state) {
-						lobby_state.phase = 'Submitting';
 						let id = msg.data.player_id;
 						let czar = lobby_state.players[id];
 						if (czar) {
@@ -118,11 +118,11 @@
 					if (lobby_state) lobby_state.settings = msg.data.settings;
 					break;
 				case 'RevealCards':
-					if (lobby_state) lobby_state.phase = 'Judging';
+					set_phase('Judging');
 					revealed_cards = msg.data.selected_cards;
 					break;
 				case 'RoundResult':
-					if (lobby_state) lobby_state.phase = 'RoundFinished';
+					set_phase('RoundFinished');
 					round_result = msg.data;
 					let winner = lobby_state?.players[round_result.player_id];
 					if (winner) {
@@ -141,10 +141,10 @@
 					});
 					break;
 				case 'GameOver':
-					if (lobby_state) lobby_state.phase = 'GameOver';
+					set_phase('GameOver');
 					break;
 				case 'LobbyReset':
-					if (lobby_state) lobby_state.phase = 'LobbyOpen';
+					set_phase('LobbyOpen');
 					round = 0;
 					break;
 				case 'Kick':
@@ -187,11 +187,15 @@
 		$own = { lobby_id: lobby_id as api.Uuid, id: own_id, name: own_name };
 	}
 
-	function getTime(): number | undefined {
-		if (isFinished) return lobby_state?.settings.wait_time_secs;
-		if (isSubmitting) return lobby_state?.settings.max_submitting_time_secs;
-		if (isJudging) return lobby_state?.settings.max_judging_time_secs;
-		return undefined;
+	function set_phase(phase: api.GamePhase) {
+		if (lobby_state) lobby_state.phase = phase;
+
+		let change: number | undefined;
+		if (phase == 'RoundFinished') change = lobby_state?.settings.wait_time_secs;
+		if (phase == 'Submitting') change = lobby_state?.settings.max_submitting_time_secs;
+		if (phase == 'Judging') change = lobby_state?.settings.max_judging_time_secs;
+
+		time = { self: change };
 	}
 </script>
 
@@ -208,7 +212,7 @@
 	{@const isCzar = lobby_state?.players[own_id]?.is_czar || false}
 	<div class="mx-auto flex max-w-7xl flex-col items-center space-y-6 px-4 py-8">
 		{#key time}
-			<TopBar {lobby_state} {own_id} {round} winner={round_result?.player_id} {time} />
+			<TopBar {lobby_state} {own_id} {round} winner={round_result?.player_id} time={time.self} />
 		{/key}
 
 		{#if black_card}
