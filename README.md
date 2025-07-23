@@ -4,8 +4,9 @@ Cards (Ludicrous ones) Against Humanity (clash) is the ultimate irreverent party
 
 ## TODO
 
-- [ ] Add in index page more about this project and link to github
+- [ ] Add in index page more about this project and link to GitHub
 - [ ] Fix bug when starting a game with selected decks which either don't have black or white cards
+- [ ] Fix activated card sets not preserving state between additions
 - [ ] All Buttons and inputs expanding when the viewpoint is on mobile size
 - [ ] Make touch/mobile friendly
   - [ ] The Hand (displaying all your cards)
