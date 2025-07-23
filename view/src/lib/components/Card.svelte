@@ -22,8 +22,13 @@
 	<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-black/10"></div>
 	<!-- Card content -->
 	<div class="relative z-10 flex h-full flex-col items-center justify-center p-2">
-		<span class="{text_classes} text-sm font-bold break-normal">
-			{card.text}
-		</span>
+		{#if card.text.startsWith('[img]') && card.text.endsWith('[/img]')}
+			{@const url = card.text.replace('[img]', '').replace('[/img]', '')}
+			<img src={url} alt={url} loading="lazy" class="aspect-auto h-fit w-fit" />
+		{:else}
+			<span class="{text_classes} text-sm font-bold break-normal">
+				{card.text}
+			</span>
+		{/if}
 	</div>
 </button>

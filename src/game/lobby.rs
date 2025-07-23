@@ -76,7 +76,7 @@ impl Lobby {
         {
             let mut guard = lobby.state.write().await;
             guard.settings = Settings::default();
-            let all_decks = Deck::get_all_cached_info(cache).await?;
+            let all_decks = Deck::get_all_cached_info(cache, None).await?;
             guard.settings.decks = all_decks;
             guard.round = 1;
             guard.phase = GamePhase::LobbyOpen;
@@ -269,7 +269,13 @@ impl Lobby {
             let fetched = Deck::fetch(&deckcode).await?;
             fetched.save(cache.clone()).await?;
 
-            let decks: Vec<DeckInfo> = Deck::get_all_cached_info(cache).await?;
+            let settings = {
+                let guard = self.state.read().await;
+                guard.settings.clone()
+            };
+
+            let decks: Vec<DeckInfo> =
+                Deck::get_all_cached_info(cache, Some(settings.decks)).await?;
 
             // update settings
             {
@@ -500,8 +506,10 @@ impl Lobby {
             guard.settings.clone()
         };
         let black = BlackCard::choose_random(self.cache.to_owned(), &settings).await?;
-        let mut guard = self.state.write().await;
-        guard.black_card = Some(black.clone());
+        {
+            let mut guard = self.state.write().await;
+            guard.black_card = Some(black.clone());
+        }
         Ok(black)
     }
 

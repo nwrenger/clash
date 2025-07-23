@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{collections::HashSet, path::PathBuf};
 
 use crate::{
     error::{Error, Result},
@@ -64,16 +64,31 @@ impl Deck {
         Ok(resp.into())
     }
 
-    pub async fn get_all_cached_info(cache: PathBuf) -> Result<Vec<DeckInfo>> {
-        Ok(Deck::get_all_cached(cache)
-            .await?
-            .iter()
-            .map(|d| DeckInfo {
-                name: d.name.clone(),
-                deckcode: d.deckcode.clone(),
-                enabled: true,
+    pub async fn get_all_cached_info(
+        cache: PathBuf,
+        deck_before: Option<Vec<DeckInfo>>,
+    ) -> Result<Vec<DeckInfo>> {
+        let enabled_codes = deck_before.as_ref().map(|v| {
+            v.iter()
+                .map(|info| info.deckcode.clone())
+                .collect::<HashSet<_>>()
+        });
+
+        let all = Deck::get_all_cached(cache).await?;
+
+        let infos = all
+            .into_iter()
+            .map(|d| {
+                let code = d.deckcode.clone();
+                DeckInfo {
+                    name: d.name.clone(),
+                    deckcode: code.clone(),
+                    enabled: enabled_codes.as_ref().is_none_or(|set| set.contains(&code)),
+                }
             })
-            .collect())
+            .collect();
+
+        Ok(infos)
     }
 
     /// List all downloaded decks by code, loading them from disk
@@ -126,19 +141,24 @@ impl WhiteCard {
         settings: &Settings,
     ) -> Result<Vec<WhiteCard>> {
         let decks = Deck::get_enabled(cache, settings).await?;
-        let mut rng = rng();
-        let whites: Vec<WhiteCard> = decks
-            .iter()
-            .flat_map(|d| d.whites.iter())
-            .choose_multiple(&mut rng, count)
-            .into_iter()
-            .cloned()
-            .collect();
 
-        if whites.is_empty() {
-            Err(Error::Deck(String::from("No white cards available")))
+        if !decks.is_empty() {
+            let mut rng = rng();
+            let whites: Vec<WhiteCard> = decks
+                .iter()
+                .flat_map(|d| d.whites.iter())
+                .choose_multiple(&mut rng, count)
+                .into_iter()
+                .cloned()
+                .collect();
+
+            if whites.is_empty() {
+                Err(Error::Deck(String::from("No white cards available")))
+            } else {
+                Ok(whites)
+            }
         } else {
-            Ok(whites)
+            Err(Error::Deck(String::from("No white cards available")))
         }
     }
 }
@@ -153,14 +173,20 @@ impl BlackCard {
     /// Pick a single random black card from all cached decks
     pub async fn choose_random(cache: PathBuf, settings: &Settings) -> Result<BlackCard> {
         let decks = Deck::get_enabled(cache, settings).await?;
-        let mut rng = rng();
-        let black = decks
-            .iter()
-            .flat_map(|d| d.blacks.iter())
-            .choose(&mut rng)
-            .cloned()
-            .ok_or_else(|| Error::Deck(String::from("No black cards available")))?;
-        Ok(black)
+
+        if !decks.is_empty() {
+            let mut rng = rng();
+            let black = decks
+                .iter()
+                .flat_map(|d| d.blacks.iter())
+                .choose(&mut rng)
+                .cloned()
+                .ok_or_else(|| Error::Deck(String::from("No black cards available")))?;
+
+            Ok(black)
+        } else {
+            Err(Error::Deck(String::from("No black cards available")))
+        }
     }
 }
 
