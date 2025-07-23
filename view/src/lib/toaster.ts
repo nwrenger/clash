@@ -88,7 +88,7 @@ function error_msg(error: api.Error): Options {
 		default:
 			return {
 				title: 'Fatal Frontend Error',
-				description: 'An unknown Error has occurred. Try reopening the app!'
+				description: `An unknown Error has occurred. This could be happening due the backend being down. Try reloading the Website!`
 			};
 	}
 }
