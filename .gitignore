@@ -1,0 +1,15 @@
+# os
+.DS_Store
+.env
+
+# build
+build/
+/target
+Cargo.lock
+
+# data
+data/cache/*
+data/counter.json
+data/websockets.js
+/data/cert/*
+!/data/cert/gen.sh
