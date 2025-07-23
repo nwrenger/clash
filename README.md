@@ -2,8 +2,6 @@
 
 **Cards (Ludicrous ones) Against Humanity (CLASH)** is the ultimate irreverent party game where your wildest cards collide with humanity’s darkest humor.
 
----
-
 ## Getting Started
 
 ### Prerequisites
@@ -48,9 +46,7 @@ bun run dev
 
 > The frontend is also hosted on GitHub Pages: [https://clash.nwrenger.dev/](https://clash.nwrenger.dev/)
 
----
-
-## 🏗️ Architecture
+## Architecture
 
 ### Backend (Rust)
 
@@ -71,8 +67,6 @@ bun run dev
   - Responsive design for desktop and mobile
 - **Deployment:** Served via GitHub Pages.
 
----
-
 ## Contributing & Issues
 
 CLASH is in **active beta**. We welcome:
@@ -82,8 +76,6 @@ CLASH is in **active beta**. We welcome:
 - Pull requests
 
 Please open issues or PRs on [GitHub](https://github.com/nwrenger/clash/issues).
-
----
 
 ## License
 
