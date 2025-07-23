@@ -87,7 +87,8 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
                 send_private_event(&mut sender, &private_event).await;
               }
               else => {
-                  send_private_event(&mut sender, &PrivateServerEvent::Error(Error::WebSocket(String::from("The Broadcasting from lobby to WebSocket didn't work as expected!")))).await;
+                  send_private_event(&mut sender, &PrivateServerEvent::Error(Error::WebSocket(String::from("The Broadcasting from lobby to WebSocket didn't work as expected. Closing connection!")))).await;
+                  return;
               }
             }
         }
