@@ -7,7 +7,7 @@ use axum::{
 };
 use futures::StreamExt;
 use futures::{stream::SplitSink, SinkExt};
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::{
@@ -23,8 +23,7 @@ pub async fn ws_handler(
     Path(uuid): Path<Uuid>,
 ) -> Result<Response> {
     if let Ok(lobby) = state.get_lobby(uuid).await {
-        let c = state.cache.clone();
-        Ok(ws.on_upgrade(|socket| handle_socket(socket, lobby, c)))
+        Ok(ws.on_upgrade(|socket| handle_socket(socket, lobby)))
     } else {
         Err(Error::LobbyNotFound)
     }
@@ -44,7 +43,7 @@ async fn send_event(sender: &mut SplitSink<WebSocket, Message>, event: &ServerEv
 }
 
 /// Handles an individual WebSocket connection
-async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>, cache: PathBuf) {
+async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
     let (mut sender, mut receiver) = socket.split();
 
     // Expect a player join event
@@ -111,7 +110,7 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>, cache: PathBuf) {
                             lobby.update_settings(&player_id, settings).await
                         }
                         ClientEvent::AddDeck { deckcode } => {
-                            lobby.add_deck(cache.clone(), &player_id, deckcode).await
+                            lobby.add_deck(&player_id, deckcode).await
                         }
                         ClientEvent::StartRound => lobby.start_game(&player_id).await,
                         ClientEvent::Kick { kicked } => lobby.kick(&player_id, &kicked).await,

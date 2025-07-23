@@ -93,9 +93,9 @@
 						<CopyButton class="btn preset-filled-secondary-500" text={lobbyUrl}>
 							{#snippet child({ copied })}
 								{#if copied}
-									<ClipboardCheck /> Copied
+									Copied
 								{:else}
-									<ClipboardCopy /> Copy
+									Copy
 								{/if}
 							{/snippet}
 						</CopyButton>

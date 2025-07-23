@@ -42,7 +42,7 @@
 					card_classes="{pairIndex === selectedIndex
 						? 'z-20 -translate-y-4 scale-120 group-hover:-translate-y-4! group-hover:scale-120!'
 						: ''}
-					bg-surface-50 ml-[-3rem] first:ml-0
+					bg-surface-50 ml-[-18px] first:ml-0
 				group-hover:-translate-y-2 group-hover:scale-110 group-hover:-rotate-2"
 					text_classes="text-surface-950"
 				/>

@@ -20,12 +20,17 @@
 		disabled
 	}: Props = $props();
 
+	function hasIndex(index: number) {
+		return selectedIndexes.find((p) => p === index) != undefined;
+	}
+
 	function selectCard(index: number) {
 		if (selectable) {
-			if (selectedIndexes.length < black_card.fields) {
+			if (selectedIndexes.length < black_card.fields && !hasIndex(index)) {
 				selectedIndexes.push(index);
 			}
 			if (selectedIndexes.length == black_card.fields) {
+				console.log(selectedIndexes);
 				api.send_ws(ws!, { type: 'SubmitOwnCards', data: { indexes: selectedIndexes } });
 			}
 		}
@@ -34,19 +39,19 @@
 
 <!-- Container fixed at bottom with soft gradient overlay -->
 <div
-	class="fixed bottom-0 left-0 z-50 w-full translate-y-40 bg-gradient-to-t from-black/60 via-transparent to-transparent py-6 backdrop-blur-sm transition-transform duration-300 ease-out hover:translate-y-0 {disabled
+	class="fixed bottom-0 left-0 z-50 w-full bg-gradient-to-t from-black/60 via-transparent to-transparent py-6 backdrop-blur-sm {disabled
 		? 'opacity-60'
 		: ''}"
 >
 	<div class="flex h-full w-full items-center justify-center">
 		<div class="flex items-center space-x-4 overflow-x-scroll px-4 pt-9 pb-2 perspective-distant">
-			{#each cards as card, index (index)}
+			{#each cards as card, index}
 				<Card
 					{card}
-					card_classes="{selectedIndexes.find((p) => p == index)
+					card_classes="{hasIndex(index)
 						? 'z-20 -translate-y-4 scale-120 hover:-translate-y-4! hover:scale-120!'
 						: ''}
-						bg-surface-50 ml-[-3rem] first:ml-0"
+						bg-surface-50 ml-[-18px] first:ml-0"
 					text_classes="text-surface-950"
 					onclick={() => selectCard(index)}
 				/>

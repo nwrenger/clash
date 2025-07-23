@@ -32,3 +32,9 @@
 		overflow-x: hidden;
 	}
 }
+
+@custom-variant hovers {
+	@media (hover: hover) {
+		@slot;
+	}
+}

@@ -26,8 +26,13 @@
 <div class="mx-auto flex w-full max-w-3xl flex-col items-center space-y-6 px-4 py-8">
 	<h3 class="h3 text-center">Cards (Ludicrous ones) Against Humanity</h3>
 	<p class="text-center text-lg">
-		Welcome to <strong>CLASH</strong>, where your craziest, most outrageous cards go head‑to‑head in
-		a battle of wit, chaos, and laughter. Ready to spark friendly mayhem?
+		Dive into <strong>CLASH</strong>, where outrageous cards collide in a battle of chaos and
+		laughter. Open‑source on
+		<a href="https://github.com/nwrenger/clash" class="anchor" target="_blank">GitHub</a>. Built
+		with <em>Rust</em> and <em>Svelte</em> for blazing speed.
+	</p>
+	<p class="text-center text-lg">
+		<strong>Beta Notice:</strong> Expect rapid updates and occasional breaking changes!
 	</p>
 
 	<div class="w-full sm:max-w-xs">

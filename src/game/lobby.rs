@@ -264,10 +264,10 @@ impl Lobby {
         }
     }
 
-    pub async fn add_deck(&self, cache: PathBuf, player_id: &Uuid, deckcode: String) -> Result<()> {
+    pub async fn add_deck(&self, player_id: &Uuid, deckcode: String) -> Result<()> {
         if self.is_host(player_id).await && self.has_phase(GamePhase::LobbyOpen).await {
             let fetched = Deck::fetch(&deckcode).await?;
-            fetched.save(cache.clone()).await?;
+            fetched.save(self.cache.clone()).await?;
 
             let settings = {
                 let guard = self.state.read().await;
@@ -275,7 +275,7 @@ impl Lobby {
             };
 
             let decks: Vec<DeckInfo> =
-                Deck::get_all_cached_info(cache, Some(settings.decks)).await?;
+                Deck::get_all_cached_info(self.cache.to_owned(), Some(settings.decks)).await?;
 
             // update settings
             {
@@ -296,7 +296,7 @@ impl Lobby {
         if self.is_host(player_id).await {
             if self.has_phase(GamePhase::LobbyOpen).await
                 && self.min_players().await
-                && self.min_decks().await
+                && self.min_decks().await?
             {
                 let lobby = self.clone();
                 tokio::spawn(async move {
@@ -592,10 +592,17 @@ impl Lobby {
                 .get_mut(player_id)
                 .ok_or(Error::CardSubmission)?;
 
+            // get selected cards
             let mut cards = Vec::new();
-            for index in indexes {
-                cards.push(player.cards.remove(index));
+            for index in &indexes {
+                cards.push(player.cards[*index].clone());
             }
+
+            // remove selected indexes
+            for index in &indexes {
+                player.cards.remove(*index);
+            }
+
             guard.submissions.push((*player_id, cards));
         };
 
@@ -663,9 +670,17 @@ impl Lobby {
         guard.players.len() >= 2
     }
 
-    pub async fn min_decks(&self) -> bool {
+    pub async fn min_decks(&self) -> Result<bool> {
         let guard = self.state.read().await;
-        guard.settings.decks.iter().any(|f| f.enabled)
+        let decks_enabled = guard.settings.decks.iter().any(|f| f.enabled);
+
+        let settings = &guard.settings;
+        let decks = Deck::get_enabled(self.cache.clone(), settings).await?;
+
+        let has_all_kinds = decks.iter().any(|f| !f.blacks.is_empty())
+            && decks.iter().any(|f| !f.whites.is_empty());
+
+        Ok(decks_enabled && has_all_kinds)
     }
 
     pub async fn has_phase(&self, phase: GamePhase) -> bool {

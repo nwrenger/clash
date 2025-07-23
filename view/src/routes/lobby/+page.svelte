@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import api from '$lib/api';
 	import { own } from '$lib/state';
-	import { show_error, toaster } from '$lib/toaster';
+	import { error_toast, show_error, toaster } from '$lib/toaster';
 	import { onDestroy, onMount } from 'svelte';
 	import LobbyOpen from './LobbyOpen.svelte';
 	import TopBar from './TopBar.svelte';
@@ -57,6 +57,10 @@
 			connected = true;
 			// joins lobby if player did already join once
 			if (logged_in) join_lobby();
+		};
+
+		ws.onerror = () => {
+			show_error({ kind: 'LobbyNotFound' });
 		};
 
 		ws.onmessage = (event) => {
@@ -231,5 +235,6 @@
 {:else}
 	<div class="mx-auto flex max-w-3xl flex-col items-center space-y-6 px-4 py-8">
 		<p>Loading...</p>
+		<a href="/" class="btn preset-filled-secondary-500">Close Connection</a>
 	</div>
 {/if}

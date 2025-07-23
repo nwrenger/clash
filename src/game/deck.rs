@@ -1,4 +1,4 @@
-use std::{collections::HashSet, path::PathBuf};
+use std::path::PathBuf;
 
 use crate::{
     error::{Error, Result},
@@ -66,27 +66,31 @@ impl Deck {
 
     pub async fn get_all_cached_info(
         cache: PathBuf,
-        deck_before: Option<Vec<DeckInfo>>,
+        decks_before: Option<Vec<DeckInfo>>,
     ) -> Result<Vec<DeckInfo>> {
-        let enabled_codes = deck_before.as_ref().map(|v| {
-            v.iter()
-                .map(|info| info.deckcode.clone())
-                .collect::<HashSet<_>>()
-        });
-
         let all = Deck::get_all_cached(cache).await?;
 
-        let infos = all
+        let mut infos: Vec<DeckInfo> = all
             .into_iter()
-            .map(|d| {
-                let code = d.deckcode.clone();
-                DeckInfo {
-                    name: d.name.clone(),
-                    deckcode: code.clone(),
-                    enabled: enabled_codes.as_ref().is_none_or(|set| set.contains(&code)),
-                }
+            .map(|d| DeckInfo {
+                name: d.name.clone(),
+                deckcode: d.deckcode.clone(),
+                enabled: true,
             })
             .collect();
+
+        // Apply enabled from decks_before
+        if let Some(decks_before) = decks_before {
+            for before in decks_before {
+                if let Some((i, _)) = infos
+                    .iter()
+                    .enumerate()
+                    .find(|(_i, d)| d.deckcode == before.deckcode)
+                {
+                    infos[i].enabled = before.enabled;
+                }
+            }
+        }
 
         Ok(infos)
     }

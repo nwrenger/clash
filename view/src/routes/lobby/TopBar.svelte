@@ -28,7 +28,7 @@
 						{#if player.is_host}
 							<Crown size={16} />
 						{/if}
-						<span>{player.name}</span>
+						<span class="text-nowrap">{player.name}</span>
 					</span>
 					<span>
 						{player.points}

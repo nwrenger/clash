@@ -1,3 +1,4 @@
+import { goto } from '$app/navigation';
 import type api from './api';
 import { createToaster } from '@skeletonlabs/skeleton-svelte';
 export const toaster = createToaster({ placement: 'bottom-end' });
@@ -26,13 +27,18 @@ export function show_error(error: api.Error): never {
 	throw error.kind;
 }
 
+export interface Options {
+	title: string;
+	description: string;
+}
+
 /** Displays a error toast with improved configuration */
-export function error_toast(e: { title: string; description: string }) {
-	toaster.error(e);
+export function error_toast(opt: Options) {
+	toaster.error(opt);
 }
 
 /** Server Error translations */
-function error_msg(error: api.Error): { title: string; description: string } {
+function error_msg(error: api.Error): Options {
 	switch (error.kind) {
 		case 'LobbyClosed':
 			return {
@@ -46,7 +52,7 @@ function error_msg(error: api.Error): { title: string; description: string } {
 			};
 		case 'LobbyStart':
 			return {
-				title: `Lobby counld'nt be started`,
+				title: `Lobby couldn’t be started`,
 				description: `We couldn’t start the lobby because your configuration, or having only one player in the lobby, would leave the game in an unplayable state.`
 			};
 		case 'LobbyNotFound':
