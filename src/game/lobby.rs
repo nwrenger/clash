@@ -293,16 +293,19 @@ impl Lobby {
 
     /// Start the game on a different thread
     pub async fn start_game(self: &Arc<Self>, player_id: &Uuid) -> Result<()> {
-        if self.is_host(player_id).await
-            && self.has_phase(GamePhase::LobbyOpen).await
-            && self.min_players().await
-            && self.min_decks().await
-        {
-            let lobby = self.clone();
-            tokio::spawn(async move {
-                let _ = Lobby::run_game(lobby).await;
-            });
-            Ok(())
+        if self.is_host(player_id).await {
+            if self.has_phase(GamePhase::LobbyOpen).await
+                && self.min_players().await
+                && self.min_decks().await
+            {
+                let lobby = self.clone();
+                tokio::spawn(async move {
+                    let _ = Lobby::run_game(lobby).await;
+                });
+                Ok(())
+            } else {
+                Err(Error::LobbyStart)
+            }
         } else {
             Err(Error::Unauthorized)
         }

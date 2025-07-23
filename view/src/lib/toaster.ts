@@ -44,6 +44,11 @@ function error_msg(error: api.Error): { title: string; description: string } {
 				title: 'Lobby Already Full',
 				description: `The lobby you're trying to join is already full.`
 			};
+		case 'LobbyStart':
+			return {
+				title: `Lobby counld'nt be started`,
+				description: `We couldn’t start the lobby because your configuration, or having only one player in the lobby, would leave the game in an unplayable state.`
+			};
 		case 'LobbyNotFound':
 			return {
 				title: 'Lobby Not Found',

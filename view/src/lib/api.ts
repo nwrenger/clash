@@ -4,6 +4,7 @@ namespace api {
 	export type Error =
 		| { kind: 'LobbyClosed' }
 		| { kind: 'LobbyFull' }
+		| { kind: 'LobbyStart' }
 		| { kind: 'LobbyNotFound' }
 		| { kind: 'CardSubmission' }
 		| { kind: 'CzarChoice' }

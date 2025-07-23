@@ -14,6 +14,8 @@ pub enum Error {
     LobbyClosed,
     /// The lobby is full (from maxplayers), joining is not possible
     LobbyFull,
+    /// The lobby cannot be started, this happens because certain criteria are hit which will break the game
+    LobbyStart,
     /// The lobby is full (from maxplayers), joining is not possible
     LobbyNotFound,
     /// Card couldn't be submitted due to Game Phase missmatch
@@ -74,9 +76,10 @@ impl IntoResponse for Error {
             | Error::Deck(_) => StatusCode::BAD_REQUEST,
             Error::LobbyNotFound => StatusCode::NOT_FOUND,
             Error::Unauthorized => StatusCode::UNAUTHORIZED,
-            Error::CardSubmission | Error::CzarChoice | Error::FileSystem(_) => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            Error::CardSubmission
+            | Error::LobbyStart
+            | Error::CzarChoice
+            | Error::FileSystem(_) => StatusCode::INTERNAL_SERVER_ERROR,
             Error::WebSocket(_) | Error::Reqwest(_) => StatusCode::SERVICE_UNAVAILABLE,
         };
         (status, Json(self)).into_response()
