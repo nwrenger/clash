@@ -38,7 +38,7 @@
 
 <div class="mx-auto max-w-4xl space-y-8 px-6 py-12 text-center">
 	<h1 class="text-5xl font-extrabold">Game Over!</h1>
-	<p class="text-lg text-gray-200">Here are your champions:</p>
+	<p class="text-lg">Here are your champions:</p>
 
 	<div class="grid grid-cols-3 items-end gap-6">
 		{#each [0, 1, 2] as idx}
@@ -68,7 +68,7 @@
 						<span class="hidden text-2xl sm:block">{player.points} pts</span>
 						<span class="text-2xl sm:hidden">{player.points} </span>
 					</div>
-					<span class="text-surface-200 text-sm">
+					<span class="text-surface-800-200 text-sm">
 						{idx === 0 ? '1st Place' : idx === 1 ? '2nd Place' : '3rd Place'}
 					</span>
 				</div>
