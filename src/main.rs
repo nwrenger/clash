@@ -42,14 +42,14 @@ struct Args {
     /// Path to the SSL certificate
     #[arg(
         long,
-        default_value = "/etc/letsencrypt/live/clash.nwrenger.dev/fullchain.pem"
+        default_value = "/etc/letsencrypt/live/api.clash.nwrenger.dev/fullchain.pem"
     )]
     cert: PathBuf,
 
     /// Path to the SSL private key
     #[arg(
         long,
-        default_value = "/etc/letsencrypt/live/clash.nwrenger.dev/privkey.pem"
+        default_value = "/etc/letsencrypt/live/api.clash.nwrenger.dev/privkey.pem"
     )]
     key: PathBuf,
 }
