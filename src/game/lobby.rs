@@ -1,3 +1,4 @@
+use rand::{rng, seq::SliceRandom};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, VecDeque},
@@ -428,6 +429,13 @@ impl Lobby {
             while !self.all_player_submitted().await {
                 self.submission_notify.notified().await;
             }
+        }
+
+        // now shuffle the submission array
+        {
+            let mut guard = self.state.write().await;
+            let mut rng = rng();
+            guard.submissions.shuffle(&mut rng);
         }
     }
 
