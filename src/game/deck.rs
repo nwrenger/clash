@@ -75,7 +75,7 @@ impl Deck {
             .map(|d| DeckInfo {
                 name: d.name.clone(),
                 deckcode: d.deckcode.clone(),
-                enabled: false,
+                enabled: true,
             })
             .collect();
 

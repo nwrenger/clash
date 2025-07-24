@@ -2,7 +2,6 @@ import { API_BASE } from './utils';
 
 namespace api {
 	export type Error =
-		| { kind: 'LobbyLogin' }
 		| { kind: 'LobbyClosed' }
 		| { kind: 'LobbyFull' }
 		| { kind: 'LobbyStart' }

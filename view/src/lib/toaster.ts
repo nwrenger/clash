@@ -1,3 +1,4 @@
+import { goto } from '$app/navigation';
 import type api from './api';
 import { createToaster } from '@skeletonlabs/skeleton-svelte';
 export const toaster = createToaster({ placement: 'bottom-end' });
@@ -39,11 +40,6 @@ export function error_toast(opt: Options) {
 /** Server Error translations */
 function error_msg(error: api.Error): Options {
 	switch (error.kind) {
-		case 'LobbyLogin':
-			return {
-				title: 'Lobby couldn’t be joined',
-				description: `You’re trying to join a lobby with malformed data. Try reloading the Website!`
-			};
 		case 'LobbyClosed':
 			return {
 				title: 'Lobby Is Closed',

@@ -3,8 +3,16 @@
 	import api from '$lib/api';
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import { areObjectsEqual, deepClone, sortedEntries } from '$lib/utils';
-	import { Tabs } from '@skeletonlabs/skeleton-svelte';
-	import { Crown, Eye, EyeOff, Play, Settings2 } from 'lucide-svelte';
+	import { Switch, Tabs } from '@skeletonlabs/skeleton-svelte';
+	import {
+		ClipboardCheck,
+		ClipboardCopy,
+		Crown,
+		Eye,
+		EyeOff,
+		Play,
+		Settings2
+	} from 'lucide-svelte';
 	import AddDeck from './AddDeck.svelte';
 
 	interface Props {
@@ -40,14 +48,14 @@
 	}
 </script>
 
-<div class="mx-auto flex max-w-3xl flex-col items-center px-4 py-8">
+<div class="mx-auto flex max-w-3xl flex-col items-center space-y-6 px-4 py-8">
 	<Tabs
 		value={tabs}
 		onValueChange={(e) => (tabs = e.value)}
 		fluid
 		composite
 		listClasses="preset-tonal pt-2 px-2 rounded-md whitespace-nowrap"
-		contentClasses=""
+		contentClasses="h-[calc(100%-61px)]"
 		classes="h-full"
 	>
 		{#snippet list()}
@@ -66,23 +74,23 @@
 		{/snippet}
 		{#snippet content()}
 			<Tabs.Panel classes="h-full space-y-6" value="lobby">
-				<div class="label">
+				<label class="label">
 					<span class="label-text">Lobby Url</span>
 
-					<div class="input-group grid-cols-[auto_1fr_auto]">
-						<button
-							class="ig-btn preset-filled p-2"
-							onclick={() => (hide_url = !hide_url)}
-							title="Toggle Visibility"
+					<div class="grid grid-cols-[auto_1fr_auto] gap-2">
+						<Switch
+							checked={hide_url}
+							onCheckedChange={(e) => (hide_url = e.checked)}
+							name="compact"
+							controlWidth="w-9"
+							controlActive="preset-filled"
+							compact
 						>
-							{#if hide_url}
-								<EyeOff size="20" />
-							{:else}
-								<Eye size="20" />
-							{/if}
-						</button>
-						<input class="ig-input {hide_url ? 'blur-sm' : ''}" value={lobbyUrl} readonly />
-						<CopyButton class="ig-btn preset-filled-secondary-500" id="cp-button" text={lobbyUrl}>
+							{#snippet inactiveChild()}<Eye size="20" />{/snippet}
+							{#snippet activeChild()}<EyeOff size="20" />{/snippet}
+						</Switch>
+						<input class="input {hide_url ? 'blur-sm' : ''}" value={lobbyUrl} readonly />
+						<CopyButton class="btn preset-filled-secondary-500" text={lobbyUrl}>
 							{#snippet child({ copied })}
 								{#if copied}
 									Copied
@@ -92,7 +100,7 @@
 							{/snippet}
 						</CopyButton>
 					</div>
-				</div>
+				</label>
 				<hr class="hr" />
 				<div class="mx-auto flex w-full max-w-(--breakpoint-xl) flex-wrap justify-center gap-2">
 					{#each sortedEntries(lobby_state?.players) as [id, player]}
@@ -147,8 +155,8 @@
 			<Tabs.Panel classes="h-full space-y-6" value="settings">
 				{#if changable_settings}
 					<div class="space-y-3">
-						<div class="w-full space-y-2">
-							<div class="label">
+						<div class="grid w-full grid-cols-[1fr_auto] gap-1.5">
+							<label class="label">
 								<span class="label-text">Card Sets</span>
 								{#each changable_settings.decks as deck}
 									<label class="flex items-center space-x-2">
@@ -162,8 +170,10 @@
 										<p>{deck.name}</p>
 									</label>
 								{/each}
+							</label>
+							<div class="pt-[22px]">
+								<AddDeck {ws} disabled={!isHost} />
 							</div>
-							<AddDeck {ws} disabled={!isHost} />
 						</div>
 						<div class="grid w-full grid-cols-2 gap-1.5">
 							<label class="label">

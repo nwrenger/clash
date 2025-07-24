@@ -3,21 +3,15 @@
 	import api from '$lib/api';
 	import { own } from '$lib/state';
 	import { handle_promise } from '$lib/toaster';
-	import { LoaderCircle, Plus } from 'lucide-svelte';
+	import { Plus } from 'lucide-svelte';
 
 	let name: string = $state('');
-	let creating = $state(false);
 
 	async function createLobby() {
-		creating = true;
-		try {
-			const id: api.Uuid = crypto.randomUUID();
-			const data = await handle_promise(api.create_lobby(name, id));
-			$own = { lobby_id: data.id, id, name };
-			await goto(`/lobby?id=${data.id}`);
-		} finally {
-			creating = false;
-		}
+		const id: api.Uuid = crypto.randomUUID();
+		const data = await handle_promise(api.create_lobby(name, id));
+		$own = { lobby_id: data.id, id, name };
+		goto(`/lobby?id=${data.id}`);
 	}
 </script>
 
@@ -55,15 +49,10 @@
 
 	<button
 		class="btn preset-filled-primary-500 flex w-full items-center justify-center sm:w-auto"
-		disabled={!name && !creating}
+		disabled={!name}
 		onclick={createLobby}
 	>
-		{#if creating}
-			<LoaderCircle class="animate-spin" />
-			Creating...
-		{:else}
-			<Plus />
-			Create Lobby
-		{/if}
+		<Plus class="mr-2" />
+		Create Lobby
 	</button>
 </div>
