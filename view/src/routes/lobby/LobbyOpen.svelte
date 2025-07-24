@@ -159,7 +159,10 @@
 											checked={deck.enabled}
 											onclick={() => (deck.enabled = !deck.enabled)}
 										/>
-										<p>{deck.name}</p>
+										<span>
+											<span>{deck.name}</span>
+											<span class="text-surface-800-200 text-xs">{deck.deckcode}</span>
+										</span>
 									</label>
 								{/each}
 							</div>
