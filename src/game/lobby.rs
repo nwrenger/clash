@@ -599,9 +599,13 @@ impl Lobby {
             }
 
             // remove selected indexes
-            for index in &indexes {
-                player.cards.remove(*index);
-            }
+            player.cards = player
+                .cards
+                .iter() // &Card
+                .enumerate() // (usize, &Card)
+                .filter(|&(i, _)| !indexes.contains(&i)) // keep those NOT in `indexes`
+                .map(|(_, card)| card.clone()) // clone the Card out
+                .collect();
 
             guard.submissions.push((*player_id, cards));
         };
