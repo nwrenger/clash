@@ -13,36 +13,36 @@
 
 1. **Clone the repo**
 
-  ```bash
+```bash
 git clone https://github.com/nwrenger/clash.git
 cd clash
-  ```
+```
 
 2. **Backend** (Rust)
 
-  ```bash
+```bash
 cd backend
 cargo build --release
 cargo run --release -- --host 0.0.0.0:8080 <other_args>
-  ```
+```
 
-  **Command-line arguments**:
+**Command-line arguments**:
 
-  | Argument          | Description                                   | Default                                                      |
-  | ----------------- | --------------------------------------------- | ------------------------------------------------------------ |
-  | `host`            | Socket address for the server (IP and port)   | *required*                                                   |
-  | `frontend_origin` | Allowed CORS origin for the frontend          | `https://api.clash.nwrenger.dev`                             |
-  | `cache`           | Filesystem path where lobby caches are stored | `cache`                                                      |
-  | `cert`            | Path to the SSL certificate (fullchain.pem)   | `/etc/letsencrypt/live/api.clash.nwrenger.dev/fullchain.pem` |
-  | `key`             | Path to the SSL private key (privkey.pem)     | `/etc/letsencrypt/live/api.clash.nwrenger.dev/privkey.pem`   |
+| Argument          | Description                                 | Default                                                      |
+| ----------------- | ------------------------------------------- | ------------------------------------------------------------ |
+| `host`            | Socket address for the server (IP and port) | _required_                                                   |
+| `frontend_origin` | Allowed CORS origin for the frontend        | `https://api.clash.nwrenger.dev`                             |
+| `cache`           | Filesystem path where decks are stored      | `cache`                                                      |
+| `cert`            | Path to the SSL certificate (fullchain.pem) | `/etc/letsencrypt/live/api.clash.nwrenger.dev/fullchain.pem` |
+| `key`             | Path to the SSL private key (privkey.pem)   | `/etc/letsencrypt/live/api.clash.nwrenger.dev/privkey.pem`   |
 
 3. **Frontend** (Svelte + Skeleton)
 
-  ```bash
+```bash
 cd frontend
 bun install
 bun run dev
-   ```
+```
 
 > The frontend is also hosted on GitHub Pages: [https://clash.nwrenger.dev/](https://clash.nwrenger.dev/)
 
