@@ -166,7 +166,10 @@
 									</label>
 								{/each}
 							</div>
-							<AddDeck {ws} disabled={!isHost} />
+
+							{#if isHost}
+								<AddDeck {ws} />
+							{/if}
 						</div>
 						<div class="grid w-full grid-cols-2 gap-1.5">
 							<label class="label">
@@ -245,6 +248,7 @@
 							</label>
 						</div>
 					</div>
+
 					{#if isHost}
 						<div class="grid gap-1.5 sm:grid-cols-2">
 							<button

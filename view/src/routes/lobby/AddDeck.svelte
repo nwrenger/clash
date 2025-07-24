@@ -1,14 +1,12 @@
 <script lang="ts">
 	import api from '$lib/api';
 	import { Modal } from '@skeletonlabs/skeleton-svelte';
-	import { WalletCards } from 'lucide-svelte';
 
 	interface Props {
 		ws: WebSocket | undefined;
-		disabled?: boolean;
 	}
 
-	let { ws, disabled }: Props = $props();
+	let { ws }: Props = $props();
 
 	let deckcode = $state('');
 	let openState = $state(false);
@@ -33,7 +31,7 @@
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet trigger()}
-		<button class="btn preset-filled-primary-500 flex w-full sm:w-auto" {disabled} title="Add Deck">
+		<button class="btn preset-filled-primary-500 flex w-full sm:w-auto" title="Add Deck">
 			Add Deck
 			<!-- <WalletCards size={18} /> -->
 		</button>
