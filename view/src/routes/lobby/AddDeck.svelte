@@ -1,7 +1,7 @@
 <script lang="ts">
 	import api from '$lib/api';
 	import { Modal } from '@skeletonlabs/skeleton-svelte';
-	import { CopyPlus } from 'lucide-svelte';
+	import { WalletCards } from 'lucide-svelte';
 
 	interface Props {
 		ws: WebSocket | undefined;
@@ -28,18 +28,19 @@
 <Modal
 	open={openState}
 	onOpenChange={(e) => (openState = e.open)}
-	triggerBase=""
+	triggerBase="sm:w-auto w-full"
 	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet trigger()}
-		<button class="btn-icon preset-filled-primary-500" {disabled}>
-			<CopyPlus />
+		<button class="btn preset-filled-primary-500 flex w-full sm:w-auto" {disabled} title="Add Deck">
+			Add Deck
+			<!-- <WalletCards size={18} /> -->
 		</button>
 	{/snippet}
 	{#snippet content()}
 		<header class="flex justify-between">
-			<h4 class="h4">Add Deck</h4>
+			<h4 class="h4">Adding a Deck</h4>
 		</header>
 		<article class="space-y-4">
 			<p class="opacity-80">
