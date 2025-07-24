@@ -327,6 +327,9 @@ impl Lobby {
                 self.judging().await?;
             }
 
+            // wait the normal time
+            self.wait_time_secs().await;
+
             self.increment_round().await;
 
             let done = {
@@ -503,9 +506,6 @@ impl Lobby {
         } else {
             self.emit_global(ServerEvent::RoundSkip)?;
         }
-
-        // wait the normal time
-        self.wait_time_secs().await;
 
         Ok(())
     }

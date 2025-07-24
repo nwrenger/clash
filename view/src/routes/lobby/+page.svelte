@@ -135,9 +135,11 @@
 					}
 					break;
 				case 'RoundSkip':
+					set_phase('RoundFinished');
 					toaster.info({
 						title: 'Skipped',
-						description: 'The current round was skipped due to nobody selecting any card.'
+						description:
+							'The current round was skipped due to the players or the Czar not selecting any cards.'
 					});
 					break;
 				case 'GameOver':
