@@ -49,13 +49,14 @@
 				type="text"
 				placeholder="Enter your nickname…"
 				bind:value={name}
+				disabled={creating}
 			/>
 		</label>
 	</div>
 
 	<button
 		class="btn preset-filled-primary-500 flex w-full items-center justify-center sm:w-auto"
-		disabled={!name && !creating}
+		disabled={!name || creating}
 		onclick={createLobby}
 	>
 		{#if creating}
