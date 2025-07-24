@@ -211,9 +211,7 @@
 {:else if isGaming}
 	{@const isCzar = lobby_state?.players[own_id]?.is_czar || false}
 	<div class="mx-auto flex max-w-7xl flex-col items-center space-y-6 px-4 py-8">
-		{#key time}
-			<TopBar {lobby_state} {own_id} {round} winner={round_result?.player_id} time={time.self} />
-		{/key}
+		<TopBar {lobby_state} {own_id} {round} winner={round_result?.player_id} {time} />
 
 		{#if black_card}
 			<BlackCard

@@ -8,7 +8,7 @@
 		lobby_state: api.LobbyState | undefined;
 		own_id: api.Uuid;
 		round: number;
-		time?: number;
+		time: { self?: number };
 		winner?: api.Uuid;
 	}
 
@@ -39,9 +39,11 @@
 	</div>
 
 	<div class="flex w-full items-center justify-center space-x-2">
-		{#if time}
-			<Countdown {time} />
-		{/if}
+		{#key time}
+			{#if time.self}
+				<Countdown time={time.self} />
+			{/if}
+		{/key}
 		<div class="card preset-filled-secondary-500 w-fit px-4 py-2">
 			{round}
 		</div>

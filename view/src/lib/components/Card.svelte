@@ -24,12 +24,7 @@
 	<div class="relative z-10 flex h-full flex-col items-center justify-center p-2">
 		{#if card.text.startsWith('[img]') && card.text.endsWith('[/img]')}
 			{@const url = card.text.replace('[img]', '').replace('[/img]', '')}
-			<img
-				src={url}
-				alt={url}
-				loading="lazy"
-				class="aspect-auto h-fit max-h-full w-fit max-w-full"
-			/>
+			<img src={url} alt={url} class="aspect-auto h-fit max-h-full w-fit max-w-full" />
 		{:else}
 			<span
 				class="{text_classes} {card.text.length > 100
