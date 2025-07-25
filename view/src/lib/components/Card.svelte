@@ -13,10 +13,8 @@
 
 <button
 	{...restProps}
-	class="{card_classes} relative h-48 w-32 flex-shrink-0 transform cursor-pointer
-	 		rounded-xl shadow-sm transition-transform duration-300 ease-out select-none perspective-midrange hover:z-50
-			hover:-translate-y-2 hover:scale-110 hover:-rotate-2
-			"
+	class="{card_classes} relative h-48 w-32 flex-shrink-0 transform
+	rounded-xl shadow-sm transition-transform duration-300 ease-out select-none perspective-midrange hover:z-50"
 >
 	<!-- Card frame and holo pattern overlay -->
 	<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-black/10"></div>
