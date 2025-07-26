@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import api from '$lib/api';
 	import { own } from '$lib/state';
-	import { error_toast, show_error, toaster } from '$lib/toaster';
+	import { show_error, toaster } from '$lib/toaster';
 	import { onDestroy, onMount } from 'svelte';
 	import LobbyOpen from './LobbyOpen.svelte';
 	import TopBar from './TopBar.svelte';
@@ -43,9 +43,13 @@
 
 	onMount(() => {
 		lobby_id = page.url.searchParams.get('id') || '';
+
+		// get stored data if already logged in
 		logged_in = $own?.lobby_id == lobby_id;
-		own_id = $own && logged_in ? $own.id : crypto.randomUUID();
-		own_name = $own && logged_in ? $own.name : '';
+		if ($own && logged_in) {
+			own_id = $own.id;
+			own_name = $own.name;
+		}
 
 		connect();
 	});
@@ -183,7 +187,7 @@
 	}
 
 	function join_lobby() {
-		// make sure to reconnect if a error closed the connection
+		// make sure to reconnect if a error closed the connection, like when trying to join a full or closed lobby
 		if (!connected) connect();
 		api.send_ws(ws!, { type: 'JoinLobby', data: { name: own_name, id: own_id } });
 		$own = { lobby_id: lobby_id as api.Uuid, id: own_id, name: own_name };

@@ -7,4 +7,4 @@ export interface Own {
 	name: string;
 }
 
-export const own: Persisted<null | Own> = persisted('own', null);
+export const own: Persisted<null | Own> = persisted('own', null, { storage: 'session' });
