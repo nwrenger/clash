@@ -208,6 +208,7 @@
 <svelte:head>
 	<title>Playing In a Lobby - Cards (Ludicrous ones) Against Humanity</title>
 	<meta name="description" content="You're currently playing in a lobby." />
+	<link rel="icon" href="/favicon.png" type="image/png" />
 </svelte:head>
 
 {#if isJoining}

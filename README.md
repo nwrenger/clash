@@ -1,6 +1,6 @@
 # clash
 
-**Cards (Ludicrous ones) Against Humanity (CLASH)** is the ultimate irreverent party game where your wildest cards collide with humanity’s darkest humor.
+**Cards (Ludicrous Ones) Against Humanity (CLASH)** is an open‑source spin on Cards Against Humanity. Unleashing outrageous prompts and razor -sharp wit in a lightning‑fast online playground.
 
 ## Getting Started
 

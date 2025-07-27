@@ -25,17 +25,19 @@
 	<title>Cards (Ludicrous ones) Against Humanity</title>
 	<meta
 		name="description"
-		content="CLASH is the ultimate irreverent party game where your wildest cards collide with humanity’s darkest humor."
+		content="CLASH is the open‑source Cards Against Humanity alternative. A lightning‑fast online party game built with Rust and Svelte, delivering outrageous prompts and dark humor."
 	/>
+	<link rel="icon" href="/favicon.png" type="image/png" />
 </svelte:head>
 
 <div class="mx-auto flex w-full max-w-3xl flex-col items-center space-y-6 px-4 py-8">
 	<h3 class="h3 text-center">Cards (Ludicrous ones) Against Humanity</h3>
 	<p class="text-center">
-		Dive into <strong>CLASH</strong>, where outrageous cards collide in a battle of chaos and
-		laughter. Open‑source on
-		<a href="https://github.com/nwrenger/clash" class="anchor" target="_blank">GitHub</a>. Built
-		with <em>Rust</em> and <em>Svelte</em> for blazing speed.
+		Welcome to <strong>CLASH</strong>! An uproarious, open‑source spin on Cards Against Humanity
+		where outrageous cards collide in a riot of chaos and laughs. Experience the mayhem live in your
+		browser, powered by <em>Rust</em> and <em>Svelte</em> for lightning‑fast performance. Dive into
+		the code on
+		<a href="https://github.com/nwrenger/clash" class="anchor" target="_blank">GitHub</a>.
 	</p>
 	<p class="text-center">
 		<strong>Beta Notice:</strong> Expect rapid updates and occasional breaking changes!
