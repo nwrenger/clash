@@ -25,14 +25,14 @@
 	<title>Cards (Ludicrous ones) Against Humanity</title>
 	<meta
 		name="description"
-		content="Cards (Ludicrous Ones) Against Humanity (CLASH) is the open‑source Cards Against Humanity alternative. A lightning‑fast online party game built with Rust and Svelte, delivering outrageous prompts and dark humor."
+		content="Cards (Ludicrous Ones) Against Humanity (CLASH) is a lightning‑fast, online and open‑source Cards Against Humanity alternative built with Rust and Svelte."
 	/>
 	<!-- Open Graph -->
 	<meta property="og:type" content="website" />
 	<meta property="og:title" content="Cards (Ludicrous ones) Against Humanity" />
 	<meta
 		property="og:description"
-		content="Cards (Ludicrous Ones) Against Humanity (CLASH) is the open‑source Cards Against Humanity alternative. A lightning‑fast online party game built with Rust and Svelte, delivering outrageous prompts and dark humor."
+		content="Cards (Ludicrous Ones) Against Humanity (CLASH) is a lightning‑fast, online and open‑source Cards Against Humanity alternative built with Rust and Svelte."
 	/>
 	<meta property="og:image" content="https://clash.nwrenger.dev/favicon.png" />
 </svelte:head>
