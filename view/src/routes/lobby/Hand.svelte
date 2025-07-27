@@ -39,7 +39,7 @@
 
 <!-- Container fixed at bottom with soft gradient overlay -->
 <div
-	class="fixed bottom-0 left-0 z-50 w-full bg-gradient-to-t from-black/60 via-transparent to-transparent py-6"
+	class="fixed bottom-0 left-0 z-50 w-full bg-gradient-to-t from-black/60 via-transparent to-transparent pb-6"
 >
 	<div class="flex h-full w-full items-center justify-center">
 		<div class="flex items-center space-x-4 overflow-x-auto px-4 pt-9 pb-2 perspective-distant">
