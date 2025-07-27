@@ -38,10 +38,9 @@
 <div class="mx-auto flex w-full max-w-3xl flex-col items-center space-y-6 px-4 py-8">
 	<h3 class="h3 text-center">Cards (Ludicrous ones) Against Humanity</h3>
 	<p class="text-center">
-		Welcome to <strong>Cards (Ludicrous Ones) Against Humanity (CLASH)</strong>. An uproarious,
-		open‑source spin on Cards Against Humanity where outrageous cards collide in a riot of chaos and
-		laughs. Experience the mayhem live in your browser, powered by <em>Rust</em> and <em>Svelte</em>
-		for lightning‑fast performance. Dive into the code on
+		Welcome to <strong>Cards (Ludicrous Ones) Against Humanity (CLASH)</strong>. An open‑source,
+		outrageous spin on Cards Against Humanity. Powered by <em>Rust</em> and <em>Svelte</em> for
+		lightning‑fast playing performance in your browser. Explore the code on
 		<a href="https://github.com/nwrenger/clash" class="anchor" target="_blank">GitHub</a>.
 	</p>
 	<p class="text-center">
