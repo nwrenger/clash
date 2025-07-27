@@ -206,12 +206,16 @@
 </script>
 
 <svelte:head>
-	<title>Playing In a Lobby - Cards (Ludicrous ones) Against Humanity</title>
+	<title>Playing in a Lobby - Cards (Ludicrous ones) Against Humanity</title>
+	<meta name="description" content="Playing in a Lobby! Time to create great combinations." />
+	<!-- Open Graph -->
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="Play in a Lobby - Cards (Ludicrous ones) Against Humanity" />
 	<meta
-		name="description"
+		property="og:description"
 		content="Join this Cards (Ludicrous ones) Against Humanity (CLASH) lobby, an open‑source Cards Against Humanity game. Jump in, pick your wildest cards, and let the chaos and laughs begin!"
 	/>
-	<link rel="icon" href="/favicon.png" type="image/png" />
+	<meta property="og:image" content="https://clash.nwrenger.dev/favicon.png" />
 </svelte:head>
 
 {#if isJoining}
