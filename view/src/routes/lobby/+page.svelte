@@ -207,7 +207,10 @@
 
 <svelte:head>
 	<title>Playing In a Lobby - Cards (Ludicrous ones) Against Humanity</title>
-	<meta name="description" content="You're currently playing in a lobby." />
+	<meta
+		name="description"
+		content="Join this Cards (Ludicrous ones) Against Humanity (CLASH) lobby, an open‑source Cards Against Humanity game. Jump in, pick your wildest cards, and let the chaos and laughs begin!"
+	/>
 	<link rel="icon" href="/favicon.png" type="image/png" />
 </svelte:head>
 
