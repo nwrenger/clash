@@ -43,8 +43,8 @@
 	});
 
 	// Prevent Navigation when in Game/Game Over
-	beforeNavigate(({ cancel }) => {
-		if (isGaming || isOver) {
+	beforeNavigate(({ cancel, type }) => {
+		if ((isGaming || isOver) && type != 'leave') {
 			toaster.warning({
 				title: 'Navigation Cancelled',
 				description: 'Your Navigation was cancelled due to a running game!'
