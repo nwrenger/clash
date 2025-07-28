@@ -543,33 +543,32 @@ impl Lobby {
         let mut deals: Vec<(Uuid, Vec<WhiteCard>)> = Vec::with_capacity(needs.len());
         for (player_id, count) in needs {
             if count > 0 {
-                let cards =
+                let new_cards =
                     WhiteCard::choose_random(self.cache.to_owned(), count, &settings).await?;
-                deals.push((player_id, cards));
+                deals.push((player_id, new_cards));
             }
         }
 
         {
             let mut guard = self.state.write().await;
-            for (player_id, cards) in deals {
-                if let Some(player) = guard.players.get_mut(&player_id) {
-                    player.cards.extend(cards);
+            for (player_id, new_cards) in &deals {
+                if let Some(player) = guard.players.get_mut(player_id) {
+                    player.cards.extend(new_cards.clone());
                 }
             }
         }
 
-        let snapshot = {
-            let guard = self.state.read().await;
-            guard
-                .players
-                .iter()
-                .map(|(&id, p)| (id, p.cards.clone()))
-                .collect::<Vec<_>>()
-        };
-        for (id, hand) in snapshot {
-            self.emit_private(&id, PrivateServerEvent::UpdateHand { cards: hand })
-                .await?;
+        for (player_id, _new_cards) in deals {
+            let hand = {
+                let guard = self.state.read().await;
+                guard.players.get(&player_id).map(|p| p.cards.clone())
+            };
+            if let Some(hand) = hand {
+                self.emit_private(&player_id, PrivateServerEvent::UpdateHand { cards: hand })
+                    .await?;
+            }
         }
+
         Ok(())
     }
 
