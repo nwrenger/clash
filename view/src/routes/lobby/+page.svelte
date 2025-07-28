@@ -11,6 +11,7 @@
 	import { sortedEntries } from '$lib/utils';
 	import Joining from './Joining.svelte';
 	import GameOver from './GameOver.svelte';
+	import { beforeNavigate } from '$app/navigation';
 
 	let lobby_id: string = $state('');
 	let logged_in: boolean = $state(false);
@@ -39,6 +40,17 @@
 
 	onDestroy(() => {
 		ws?.close();
+	});
+
+	// Prevent Navigation when in Game/Game Over
+	beforeNavigate(({ cancel }) => {
+		if (isGaming || isOver) {
+			toaster.warning({
+				title: 'Navigation Cancelled',
+				description: 'Your Navigation was cancelled due to a running game!'
+			});
+			cancel();
+		}
 	});
 
 	onMount(() => {
@@ -216,7 +228,7 @@
 	/>
 </svelte:head>
 
-<!-- Prevent Reloads when in Game/Game Over -->
+<!-- Prevent Closing when in Game/Game Over -->
 <svelte:window
 	onbeforeunload={(e) => {
 		if (isGaming || isOver) {
