@@ -216,6 +216,16 @@
 	/>
 </svelte:head>
 
+<!-- Prevent Reloads when in Game/Game Over -->
+<svelte:window
+	onbeforeunload={(e) => {
+		if (isGaming || isOver) {
+			e.preventDefault();
+			e.returnValue = '';
+		}
+	}}
+/>
+
 {#if isJoining}
 	<Joining bind:own_name {join_lobby} />
 {:else if isOpen}
