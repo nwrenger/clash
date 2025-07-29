@@ -32,7 +32,7 @@ struct Args {
     host: String,
 
     /// To enable cross origin reguests from the frontend
-    #[arg(short, default_value = "https://api.clash.nwrenger.dev")]
+    #[arg(short, default_value = "https://clash.nwrenger.dev")]
     frontend_origin: String,
 
     /// Path to the cache folder
@@ -102,7 +102,6 @@ async fn main() {
             ServiceBuilder::new()
                 .layer(
                     CorsLayer::new()
-                        .allow_origin(args.host.parse::<HeaderValue>().unwrap())
                         .allow_origin(args.frontend_origin.parse::<HeaderValue>().unwrap())
                         .allow_headers(Any)
                         .allow_methods(Any),
