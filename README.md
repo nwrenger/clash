@@ -33,12 +33,12 @@ cargo run -- localhost:8080 -f http://localhost:5173 --cache data/cache --cert d
 
 | Argument | Description                                           | Default                                                      |
 | -------- | ----------------------------------------------------- | ------------------------------------------------------------ |
-| `<HOST>` | **Required**. Socket address for the server (IP:port) | —                                                            |
+| `<HOST>` | **Required**. Socket address for the server (IP:port) | _None_                                                       |
 | `-f`     | Allowed CORS origin for the frontend                  | `https://api.clash.nwrenger.dev`                             |
 | `-c`     | Filesystem path where decks are stored                | `cache`                                                      |
 | `--cert` | Path to the SSL certificate (`fullchain.pem`)         | `/etc/letsencrypt/live/api.clash.nwrenger.dev/fullchain.pem` |
 | `--key`  | Path to the SSL private key (`privkey.pem`)           | `/etc/letsencrypt/live/api.clash.nwrenger.dev/privkey.pem`   |
-| `--help` | Print help                                            | —                                                            |
+| `--help` | Print help                                            | _None_                                                       |
 
 3. **Frontend** (Svelte + Skeleton)
 
@@ -81,7 +81,7 @@ CLASH is in **active beta**. We welcome:
 - Feature requests
 - Pull requests
 
-Please open issues or PRs on [GitHub](/issues).
+Please open issues or PRs on [GitHub](https://github.com/nwrenger/clash/issues).
 
 ## License
 
