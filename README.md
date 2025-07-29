@@ -58,7 +58,7 @@ bun run dev
   - `[POST] /lobby` — Creates a new lobby and returns its UUID.
   - `[ANY] /ws/:lobby_id` — WebSocket endpoint to join and interact with a lobby.
 - **Core:** Game state managed in-memory, clients communicate via WebSockets.
-- **Server:** Runs on a central host, handling broadcasting and private messages.
+- **Server:** Hosted centrally, responsible for message broadcasting and managing gameplay.
 
 ### [Frontend](./view) (Svelte + Skeleton)
 
