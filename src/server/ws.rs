@@ -106,7 +106,6 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
     while let Some(Ok(msg)) = receiver.next().await {
         if let Message::Text(txt) = msg {
             if let Ok(event) = serde_json::from_str::<ClientEvent>(&txt) {
-                // TODO: Error Handling via sending Error Event
                 if let Err(error) = {
                     match event {
                         ClientEvent::JoinLobby { .. } => Ok(()),

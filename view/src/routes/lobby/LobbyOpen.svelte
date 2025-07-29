@@ -25,6 +25,10 @@
 
 	let isHost = $derived(lobby_state?.players[own_id]?.is_host || false);
 	let lobbyUrl = $derived(`${page.url.origin}/lobby?id=${lobby_id}`);
+	let applyable = $derived(
+		!areObjectsEqual(changable_settings, lobby_state?.settings) &&
+			changable_settings?.max_players != undefined
+	);
 
 	function kick(own_id: api.Uuid, player_id: api.Uuid) {
 		if (own_id != player_id) api.send_ws(ws!, { type: 'Kick', data: { kicked: player_id } });
@@ -189,16 +193,13 @@
 							<label class="label">
 								<span class="label-text">Max Players</span>
 
-								<select
-									class="select"
+								<input
+									class="input"
+									type="number"
+									placeholder="Input max players..."
 									bind:value={changable_settings.max_players}
 									disabled={!isHost}
-								>
-									{#each Array.from({ length: 69 }) as _, i}
-										{@const round = i + 1}
-										<option value={round}>{round}</option>
-									{/each}
-								</select>
+								/>
 							</label>
 						</div>
 						<div class="w-full">
@@ -253,13 +254,13 @@
 						<div class="grid gap-1.5 sm:grid-cols-2">
 							<button
 								class="btn preset-filled-error-500"
-								disabled={areObjectsEqual(changable_settings, lobby_state?.settings)}
+								disabled={!applyable}
 								onclick={() => (changable_settings = deepClone(lobby_state?.settings))}
 								>Reset</button
 							>
 							<button
 								class="btn preset-filled-success-500"
-								disabled={areObjectsEqual(changable_settings, lobby_state?.settings)}
+								disabled={!applyable}
 								onclick={update_settings}>Apply</button
 							>
 						</div>
