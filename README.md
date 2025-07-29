@@ -21,25 +21,29 @@ cd clash
 2. **Backend** (Rust)
 
 ```bash
-cd backend
-cargo build --release
-cargo run --release -- --host 0.0.0.0:8080 <other_args>
+# Firstly generate some certificates
+./data/cert/gen.sh
+# Run Debug Build with frontend build
+cargo run -- localhost:8080 -f http://localhost:5173 --cache data/cache --cert data/cert/cert.pem --key data/cert/key.pem
 ```
+
+> The backend is also self-hosted at: [https://api.clash.nwrenger.dev/](https://api.clash.nwrenger.dev/)
 
 **Command-line arguments**:
 
-| Argument          | Description                                 | Default                                                      |
-| ----------------- | ------------------------------------------- | ------------------------------------------------------------ |
-| `host`            | Socket address for the server (IP and port) | _required_                                                   |
-| `frontend_origin` | Allowed CORS origin for the frontend        | `https://api.clash.nwrenger.dev`                             |
-| `cache`           | Filesystem path where decks are stored      | `cache`                                                      |
-| `cert`            | Path to the SSL certificate (fullchain.pem) | `/etc/letsencrypt/live/api.clash.nwrenger.dev/fullchain.pem` |
-| `key`             | Path to the SSL private key (privkey.pem)   | `/etc/letsencrypt/live/api.clash.nwrenger.dev/privkey.pem`   |
+| Argument | Description                                           | Default                                                      |
+| -------- | ----------------------------------------------------- | ------------------------------------------------------------ |
+| `<HOST>` | **Required**. Socket address for the server (IP:port) | —                                                            |
+| `-f`     | Allowed CORS origin for the frontend                  | `https://api.clash.nwrenger.dev`                             |
+| `-c`     | Filesystem path where decks are stored                | `cache`                                                      |
+| `--cert` | Path to the SSL certificate (`fullchain.pem`)         | `/etc/letsencrypt/live/api.clash.nwrenger.dev/fullchain.pem` |
+| `--key`  | Path to the SSL private key (`privkey.pem`)           | `/etc/letsencrypt/live/api.clash.nwrenger.dev/privkey.pem`   |
+| `--help` | Print help                                            | —                                                            |
 
 3. **Frontend** (Svelte + Skeleton)
 
 ```bash
-cd frontend
+cd view
 bun install
 bun run dev
 ```
@@ -48,7 +52,7 @@ bun run dev
 
 ## Architecture
 
-### Backend (Rust)
+### [Backend](./) (Rust)
 
 - **Endpoints:**
   - `[POST] /lobby` — Creates a new lobby and returns its UUID.
@@ -56,7 +60,7 @@ bun run dev
 - **Core:** Game state managed in-memory, clients communicate via WebSockets.
 - **Server:** Runs on a central host, handling broadcasting and private messages.
 
-### Frontend (Svelte + Skeleton)
+### [Frontend](./view) (Svelte + Skeleton)
 
 - **Framework:** Svelte with Skeleton UI components.
 - **Features:**
@@ -65,7 +69,9 @@ bun run dev
   - Allowing custom decks from [clrtd](https://cast.clrtd.com/)
   - Real‑time updates via WebSockets
   - Responsive design for desktop and mobile
-- **Deployment:** Served via GitHub Pages.
+- **Deployment:**
+  - Hosted on GitHub Pages
+  - Automatically rebuilt and published on every commit
 
 ## Contributing & Issues
 
@@ -75,7 +81,7 @@ CLASH is in **active beta**. We welcome:
 - Feature requests
 - Pull requests
 
-Please open issues or PRs on [GitHub](https://github.com/nwrenger/clash/issues).
+Please open issues or PRs on [GitHub](/issues).
 
 ## License
 

@@ -36,7 +36,7 @@ struct Args {
     frontend_origin: String,
 
     /// Path to the cache folder
-    #[arg(long, default_value = "cache")]
+    #[arg(short, default_value = "cache")]
     cache: PathBuf,
 
     /// Path to the SSL certificate
