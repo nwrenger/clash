@@ -132,7 +132,11 @@
 					let placeholders = [];
 					if (player_submit && black_card) {
 						for (let i = 0; i < black_card.fields; i++) {
-							placeholders.push({ text: `Card by ${player_submit.name}` });
+							if (id === own_id) {
+								placeholders.push({ text: 'Your Card' });
+							} else {
+								placeholders.push({ text: `Card by ${player_submit.name}` });
+							}
 						}
 						revealed_cards.push(placeholders);
 					}
