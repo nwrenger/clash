@@ -173,6 +173,9 @@
 					break;
 				case 'LobbyReset':
 					set_phase('LobbyOpen');
+					for (const [_, player] of sortedEntries(lobby_state?.players)) {
+						player.points = 0;
+					}
 					round = 0;
 					break;
 				case 'Kick':

@@ -669,13 +669,13 @@ impl Lobby {
             let mut guard = self.state.write().await;
             guard.round = 1;
             guard.phase = GamePhase::LobbyOpen;
-            self.global.send(ServerEvent::LobbyReset)?;
             for p in guard.players.values_mut() {
                 p.info.is_czar = false;
                 p.info.points = 0;
                 p.cards.clear();
             }
-            Ok(())
+
+            self.emit_global(ServerEvent::LobbyReset)
         } else {
             Err(Error::Unauthorized)
         }
