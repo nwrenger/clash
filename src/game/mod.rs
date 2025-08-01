@@ -40,8 +40,6 @@ pub enum ClientEvent {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", content = "data")]
 pub enum ServerEvent {
-    /// New state of the lobby
-    LobbyState(LobbyState),
     /// The Round starts, a player has been selected as the czar with their card
     StartRound {
         player_id: Uuid,
@@ -49,7 +47,7 @@ pub enum ServerEvent {
     },
     /// A card has been submitted by a player
     CardsSubmitted { player_id: Uuid },
-    /// The Players has been updated by the host, via a kick
+    /// The Players has been updated by a join or the host via a kick
     UpdatePlayers { players: HashMap<Uuid, PlayerInfo> },
     /// The Decks has been updated by the host, via a kick
     UpdateDecks { decks: Vec<DeckInfo> },
@@ -74,6 +72,8 @@ pub enum ServerEvent {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", content = "data")]
 pub enum PrivateServerEvent {
+    /// New state of the lobby
+    LobbyState(LobbyState),
     /// Updates a player's hand (e.g., after submission or round start)
     UpdateHand { cards: Vec<WhiteCard> },
     /// A Player gets kicked by the host

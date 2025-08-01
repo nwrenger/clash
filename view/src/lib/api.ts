@@ -105,10 +105,6 @@ namespace api {
 		| { type: 'CzarPick'; data: { index: number } };
 
 	export type ServerEvent =
-		| {
-				type: 'LobbyState';
-				data: LobbyState;
-		  }
 		| { type: 'StartRound'; data: { player_id: Uuid; black_card: BlackCard } }
 		| { type: 'CardsSubmitted'; data: { player_id: Uuid } }
 		| { type: 'UpdatePlayers'; data: { players: Record<Uuid, PlayerInfo> } }
@@ -121,6 +117,10 @@ namespace api {
 		| { type: 'LobbyReset' };
 
 	export type PrivateServerEvent =
+		| {
+				type: 'LobbyState';
+				data: LobbyState;
+		  }
 		| { type: 'UpdateHand'; data: { cards: WhiteCard[] } }
 		| { type: 'Kick' }
 		| { type: 'Error'; data: api.Error };

@@ -139,7 +139,7 @@ impl Lobby {
     }
 
     /// Send the current lobby state globally
-    pub async fn send_lobby_state(&self) -> Result<()> {
+    pub async fn send_lobby_state(&self, player_id: &Uuid) -> Result<()> {
         let (players, settings, phase) = {
             let guard = self.state.read().await;
             let players = guard
@@ -155,11 +155,15 @@ impl Lobby {
 
         self.touch().await;
 
-        self.emit_global(ServerEvent::LobbyState(LobbyState {
-            players,
-            settings,
-            phase,
-        }))
+        self.emit_private(
+            player_id,
+            PrivateServerEvent::LobbyState(LobbyState {
+                players,
+                settings,
+                phase,
+            }),
+        )
+        .await
     }
 
     /// Player joins the lobby
@@ -190,6 +194,22 @@ impl Lobby {
             };
             guard.players.insert(player_id, new_player);
             guard.czar_order.push_back(player_id);
+        }
+
+        // update now the players
+        {
+            let players = {
+                let guard = self.state.read().await;
+                let players = guard
+                    .players
+                    .iter()
+                    .map(|(&id, p)| (id, p.info.clone()))
+                    .collect();
+
+                players
+            };
+
+            self.emit_global(ServerEvent::UpdatePlayers { players })?;
         }
 
         self.touch().await;
@@ -659,18 +679,16 @@ impl Lobby {
 
     pub async fn reset_game(&self, player_id: &Uuid) -> Result<()> {
         if self.is_host(player_id).await && self.has_phase(GamePhase::GameOver).await {
-            {
-                let mut guard = self.state.write().await;
-                guard.round = 1;
-                guard.phase = GamePhase::LobbyOpen;
-                self.global.send(ServerEvent::LobbyReset)?;
-                for p in guard.players.values_mut() {
-                    p.info.is_czar = false;
-                    p.info.points = 0;
-                    p.cards.clear();
-                }
+            let mut guard = self.state.write().await;
+            guard.round = 1;
+            guard.phase = GamePhase::LobbyOpen;
+            self.global.send(ServerEvent::LobbyReset)?;
+            for p in guard.players.values_mut() {
+                p.info.is_czar = false;
+                p.info.points = 0;
+                p.cards.clear();
             }
-            self.send_lobby_state().await
+            Ok(())
         } else {
             Err(Error::Unauthorized)
         }

@@ -94,7 +94,7 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
         }
     });
 
-    if let Err(error) = lobby.send_lobby_state().await {
+    if let Err(error) = lobby.send_lobby_state(&player_id).await {
         lobby
             .emit_private(&player_id, PrivateServerEvent::Error(error))
             .await
