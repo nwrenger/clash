@@ -50,7 +50,7 @@ impl ServerState {
         before - self.lobbies.len()
     }
 
-    pub async fn get_lobby(&self, uuid: Uuid) -> Result<Arc<Lobby>> {
+    pub fn get_lobby(&self, uuid: Uuid) -> Result<Arc<Lobby>> {
         if let Some(lobby) = self.lobbies.get(&uuid) {
             Ok(lobby.clone())
         } else {

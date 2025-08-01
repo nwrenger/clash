@@ -22,7 +22,7 @@ pub async fn ws_handler(
     State(state): State<Arc<ServerState>>,
     Path(uuid): Path<Uuid>,
 ) -> Result<Response> {
-    if let Ok(lobby) = state.get_lobby(uuid).await {
+    if let Ok(lobby) = state.get_lobby(uuid) {
         Ok(ws.on_upgrade(|socket| handle_socket(socket, lobby)))
     } else {
         Err(Error::LobbyNotFound)
