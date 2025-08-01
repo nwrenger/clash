@@ -1,3 +1,4 @@
+use dashmap::DashMap;
 use rand::{rng, seq::SliceRandom};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -41,7 +42,7 @@ pub struct LobbyData {
 /// The overall lobby/game, separating channels from state.
 pub struct Lobby {
     pub global: Sender<ServerEvent>, // broadcast to all clients
-    pub private: RwLock<HashMap<Uuid, UnboundedSender<PrivateServerEvent>>>,
+    pub private: DashMap<Uuid, UnboundedSender<PrivateServerEvent>>,
     pub cache: PathBuf,
     pub state: RwLock<LobbyData>, // game state
     pub last_activity: RwLock<Instant>,
@@ -65,7 +66,7 @@ impl Lobby {
     pub async fn new(cache: PathBuf, host_name: String, host_id: Uuid) -> Result<Arc<Self>> {
         let lobby = Arc::new(Self {
             global: Sender::new(100),
-            private: RwLock::new(HashMap::new()),
+            private: DashMap::new(),
             state: RwLock::new(LobbyData::default()),
             submission_notify: Notify::new(),
             last_activity: RwLock::new(Instant::now()),
@@ -108,7 +109,7 @@ impl Lobby {
         player_id: Uuid,
     ) -> UnboundedReceiver<PrivateServerEvent> {
         let (tx, rx) = unbounded_channel();
-        self.private.write().await.insert(player_id, tx);
+        self.private.insert(player_id, tx);
         rx
     }
 
@@ -120,8 +121,7 @@ impl Lobby {
 
     /// Emit a private event
     pub async fn emit_private(&self, player_id: &Uuid, event: PrivateServerEvent) -> Result<()> {
-        let map = self.private.read().await;
-        if let Some(tx) = map.get(player_id) {
+        if let Some(tx) = self.private.get(player_id) {
             tx.send(event)?;
             Ok(())
         } else {
