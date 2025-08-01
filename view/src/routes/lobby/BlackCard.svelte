@@ -43,9 +43,7 @@
 	</div>
 
 	<div class="flex h-full w-full items-center space-x-8 overflow-x-auto px-4 pt-9 pb-2">
-		{#each revealed_cards as pair, i}
-			{@render RevealedCards()}
-		{/each}
+		{@render RevealedCards()}
 	</div>
 {/if}
 
