@@ -82,6 +82,19 @@
 		ws.onmessage = (event) => {
 			const msg: api.IncommingEvent = JSON.parse(event.data);
 			switch (msg.type) {
+				case 'PlayerJoin':
+					let joined_id = msg.data.player_id;
+					let joined_info = msg.data.player_info;
+					if (lobby_state) {
+						lobby_state.players[joined_id] = joined_info;
+					}
+					break;
+				case 'PlayerKick':
+					let kicked_id = msg.data.player_id;
+					if (lobby_state) {
+						delete lobby_state.players[kicked_id];
+					}
+					break;
 				case 'LobbyState':
 					lobby_state = msg.data;
 					break;
@@ -123,9 +136,6 @@
 						}
 						revealed_cards.push(placeholders);
 					}
-					break;
-				case 'UpdatePlayers':
-					if (lobby_state) lobby_state.players = msg.data.players;
 					break;
 				case 'UpdateDecks':
 					if (lobby_state) lobby_state.settings.decks = msg.data.decks;

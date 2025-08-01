@@ -105,9 +105,10 @@ namespace api {
 		| { type: 'CzarPick'; data: { index: number } };
 
 	export type ServerEvent =
+		| { type: 'PlayerJoin'; data: { player_id: Uuid; player_info: PlayerInfo } }
+		| { type: 'PlayerKick'; data: { player_id: Uuid } }
 		| { type: 'StartRound'; data: { player_id: Uuid; black_card: BlackCard } }
 		| { type: 'CardsSubmitted'; data: { player_id: Uuid } }
-		| { type: 'UpdatePlayers'; data: { players: Record<Uuid, PlayerInfo> } }
 		| { type: 'UpdateDecks'; data: { decks: DeckInfo[] } }
 		| { type: 'UpdateSettings'; data: { settings: Settings } }
 		| { type: 'RevealCards'; data: { selected_cards: WhiteCard[][] } }

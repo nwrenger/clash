@@ -180,37 +180,30 @@ impl Lobby {
                 return Err(Error::LobbyFull);
             }
         }
+
+        let player_info = PlayerInfo {
+            name: player_name,
+            is_host: false,
+            is_czar: false,
+            points: 0,
+        };
+
         // upgrade to write lock to add player
         {
             let mut guard = self.state.write().await;
             let new_player = Player {
-                info: PlayerInfo {
-                    name: player_name,
-                    is_host: false,
-                    is_czar: false,
-                    points: 0,
-                },
+                info: player_info.clone(),
                 cards: Vec::new(),
             };
             guard.players.insert(player_id, new_player);
             guard.czar_order.push_back(player_id);
         }
 
-        // update now the players
-        {
-            let players = {
-                let guard = self.state.read().await;
-                let players = guard
-                    .players
-                    .iter()
-                    .map(|(&id, p)| (id, p.info.clone()))
-                    .collect();
-
-                players
-            };
-
-            self.emit_global(ServerEvent::UpdatePlayers { players })?;
-        }
+        // emit now the player join
+        self.emit_global(ServerEvent::PlayerJoin {
+            player_id,
+            player_info,
+        })?;
 
         self.touch().await;
 
@@ -233,18 +226,12 @@ impl Lobby {
             guard.players.remove(player_id);
             guard.czar_order.retain(|id| id != player_id);
         }
-        let players = {
-            let guard = self.state.read().await;
-            guard
-                .players
-                .iter()
-                .map(|(&id, p)| (id, p.info.clone()))
-                .collect()
-        };
 
         self.touch().await;
 
-        self.emit_global(ServerEvent::UpdatePlayers { players })?;
+        self.emit_global(ServerEvent::PlayerKick {
+            player_id: *player_id,
+        })?;
         self.emit_private(player_id, PrivateServerEvent::Kick)
             .await?;
 
