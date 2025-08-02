@@ -64,7 +64,7 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
         }
     };
 
-    // open global and private receivers and join the lobby
+    // Open global and private receivers and join the lobby
     let (mut global, mut private) = {
         if let Err(msg) = lobby.join(player_name, player_id).await {
             send_private_event(&mut sender, &PrivateServerEvent::Error(msg)).await;
@@ -139,6 +139,6 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
         }
     }
 
-    // mark a player as disconnected
+    // Mark the player as disconnected
     lobby.player_disconnected(player_id).await;
 }

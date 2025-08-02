@@ -83,14 +83,14 @@ async fn main() {
         std::process::exit(1);
     }
 
-    // init some ws sockets and lobbies state
+    // Init some ws sockets and lobbies state
     let state = Arc::new(ServerState::new(args.cache));
 
-    // spawn the janitor
+    // Spawn the janitor
     {
         let janitor = state.clone();
         tokio::spawn(async move {
-            // tick every 30 minutes
+            // tick every `TIMEOUT_INTERVAL`
             let mut tick = interval(TIMEOUT_INTERVAL);
             loop {
                 tick.tick().await;
@@ -145,7 +145,7 @@ async fn main() {
         res = server => res.unwrap(),
     }
 
-    // For future referenc: Here can be stuff written which should happen after shutdown
+    // For future reference: Here can be stuff written which should happen after shutdown
 }
 
 /// Initialize tracing

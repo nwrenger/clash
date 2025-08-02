@@ -26,8 +26,8 @@ impl ServerState {
         }
     }
 
-    /// Remove all lobbies in `LobbyOpen` or `GameOver` _only_ if they've
-    /// been idle for over one hour. Returns how many were dropped.
+    /// Remove all lobbies if they've been idle for `> TIMEOUT_INTERVAL`.
+    /// Returns how many were dropped.
     pub async fn clean_unused(&self) -> usize {
         // Scan for stale IDs
         let now = Instant::now();
