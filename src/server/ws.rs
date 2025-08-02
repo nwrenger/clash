@@ -8,13 +8,14 @@ use axum::{
 use futures::StreamExt;
 use futures::{stream::SplitSink, SinkExt};
 use std::sync::Arc;
+use tokio::time::timeout;
 use uuid::Uuid;
 
 use crate::{
     error::{Error, Result},
     game::{lobby::Lobby, ClientEvent, PrivateServerEvent, ServerEvent},
     server::ServerState,
-    TIMEOUT_INTERVAL,
+    GRACE_PERIOD, TIMEOUT_INTERVAL,
 };
 
 /// WebSocket handler for the `/ws/{uuid}` route
@@ -47,10 +48,10 @@ async fn send_event(sender: &mut SplitSink<WebSocket, Message>, event: &ServerEv
 async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
     let (mut sender, mut receiver) = socket.split();
 
-    // Expect a player join event
-    // otherwise close the connection
-    let txt = match receiver.next().await {
-        Some(Ok(Message::Text(t))) => t,
+    // Expect a player join event otherwise close the connection
+    // Also close after the `GRACE_PERIOD`
+    let txt = match timeout(GRACE_PERIOD, receiver.next()).await {
+        Ok(Some(Ok(Message::Text(t)))) => t,
         _ => {
             send_private_event(&mut sender, &PrivateServerEvent::Error(Error::LobbyLogin)).await;
             return;
@@ -103,10 +104,7 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
     }
 
     // Receive events from websocket, timeout after the `TIMEOUT_INTERVAL`
-    while let Some(Ok(Ok(msg))) = tokio::time::timeout(TIMEOUT_INTERVAL, receiver.next())
-        .await
-        .transpose()
-    {
+    while let Some(Ok(Ok(msg))) = timeout(TIMEOUT_INTERVAL, receiver.next()).await.transpose() {
         if let Message::Text(txt) = msg {
             if let Ok(event) = serde_json::from_str::<ClientEvent>(&txt) {
                 if let Err(error) = {

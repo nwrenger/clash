@@ -65,6 +65,12 @@ pub enum GamePhase {
     GameOver,
 }
 
+impl Drop for Lobby {
+    fn drop(&mut self) {
+        tracing::info!("Lobby dropped");
+    }
+}
+
 impl Lobby {
     /// Create a new lobby with host as first player.
     pub async fn new(cache: PathBuf, host_name: String, host_id: Uuid) -> Result<Arc<Self>> {

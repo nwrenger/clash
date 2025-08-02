@@ -46,6 +46,18 @@ impl ServerState {
         let before = self.lobbies.len();
         for id in to_remove {
             if let Some((_, lobby)) = self.lobbies.remove(&id) {
+                let arc_count = Arc::strong_count(&lobby);
+                let player_count = {
+                    let guard = lobby.state.read().await;
+                    guard.players.len()
+                };
+                tracing::info!(
+                    lobby_id = %id,
+                    arc_count,
+                    player_count,
+                    "Pruning lobby",
+                );
+
                 lobby.cancel_task().await;
             }
         }
