@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::time::Duration;
 
 use axum::{extract::State, Json};
 use dashmap::DashMap;
@@ -10,6 +9,7 @@ use uuid::Uuid;
 
 use crate::error::{Error, Result};
 use crate::game::lobby::Lobby;
+use crate::TIMEOUT_INTERVAL;
 
 pub mod ws;
 
@@ -37,7 +37,7 @@ impl ServerState {
             let id = *entry.key();
             let lobby = entry.value().clone();
             let last = *lobby.last_activity.read().await;
-            if now.duration_since(last) > Duration::from_secs(60 * 60) {
+            if now.duration_since(last) > TIMEOUT_INTERVAL {
                 to_remove.push(id);
             }
         }
@@ -45,7 +45,9 @@ impl ServerState {
         // Actually remove them
         let before = self.lobbies.len();
         for id in to_remove {
-            self.lobbies.remove(&id);
+            if let Some((_, lobby)) = self.lobbies.remove(&id) {
+                lobby.cancel_task().await;
+            }
         }
         before - self.lobbies.len()
     }

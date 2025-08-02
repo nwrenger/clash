@@ -45,11 +45,13 @@ pub enum ServerEvent {
         player_id: Uuid,
         player_info: PlayerInfo,
     },
-    /// The host host kicked a player
-    PlayerKick { player_id: Uuid },
+    /// A player was removed, either by the host or due to a timeout
+    PlayerRemove { player_id: Uuid },
+    /// The host left the lobby, assigns a new player to be one
+    AssignHost { player_id: Uuid },
     /// The Round starts, a player has been selected as the czar with their card
     StartRound {
-        player_id: Uuid,
+        czar_id: Uuid,
         black_card: BlackCard,
     },
     /// A card has been submitted by a player
@@ -81,6 +83,8 @@ pub enum PrivateServerEvent {
     LobbyState(LobbyState),
     /// Updates a player's hand (e.g., after submission or round start)
     UpdateHand { cards: Vec<WhiteCard> },
+    /// A Player times out
+    Timeout,
     /// A Player gets kicked by the host
     Kick,
     /// An error occurred during communication

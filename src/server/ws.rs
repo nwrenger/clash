@@ -14,6 +14,7 @@ use crate::{
     error::{Error, Result},
     game::{lobby::Lobby, ClientEvent, PrivateServerEvent, ServerEvent},
     server::ServerState,
+    TIMEOUT_INTERVAL,
 };
 
 /// WebSocket handler for the `/ws/{uuid}` route
@@ -87,7 +88,6 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
                 send_private_event(&mut sender, &private_event).await;
               }
               else => {
-                  send_private_event(&mut sender, &PrivateServerEvent::Error(Error::WebSocket(String::from("The Broadcasting from lobby to WebSocket didn't work as expected. Closing connection!")))).await;
                   return;
               }
             }
@@ -102,8 +102,11 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
         return;
     }
 
-    // Receive events from websocket
-    while let Some(Ok(msg)) = receiver.next().await {
+    // Receive events from websocket, timeout after the `TIMEOUT_INTERVAL`
+    while let Some(Ok(Ok(msg))) = tokio::time::timeout(TIMEOUT_INTERVAL, receiver.next())
+        .await
+        .transpose()
+    {
         if let Message::Text(txt) = msg {
             if let Ok(event) = serde_json::from_str::<ClientEvent>(&txt) {
                 if let Err(error) = {
@@ -135,4 +138,7 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
             }
         }
     }
+
+    // mark a player as disconnected
+    lobby.player_disconnected(player_id).await;
 }

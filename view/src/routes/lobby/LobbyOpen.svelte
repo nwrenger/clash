@@ -30,6 +30,19 @@
 			changable_settings?.max_players != undefined
 	);
 
+	function handleMaxPlayers(e: Event) {
+		let target = e.target as HTMLInputElement;
+		const val = parseInt(target.value, 10);
+		// Check for integer and >= 1
+		if (changable_settings) {
+			if (Number.isInteger(val) && val >= 1) {
+				changable_settings.max_players = val;
+			} else {
+				changable_settings.max_players = undefined as any;
+			}
+		}
+	}
+
 	function kick(own_id: api.Uuid, player_id: api.Uuid) {
 		if (own_id != player_id) api.send_ws(ws!, { type: 'Kick', data: { kicked: player_id } });
 	}
@@ -196,8 +209,11 @@
 								<input
 									class="input"
 									type="number"
+									min={1}
+									step={1}
 									placeholder="Input max players..."
-									bind:value={changable_settings.max_players}
+									value={changable_settings.max_players || ''}
+									oninput={handleMaxPlayers}
 									disabled={!isHost}
 								/>
 							</label>

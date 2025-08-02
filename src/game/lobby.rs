@@ -7,7 +7,6 @@ use std::{
     sync::Arc,
     time::Duration,
 };
-use tokio::time::sleep;
 use tokio::{
     sync::{
         broadcast::{Receiver, Sender},
@@ -16,6 +15,8 @@ use tokio::{
     },
     time::Instant,
 };
+use tokio::{task::JoinHandle, time::sleep};
+use tracing::error;
 use uuid::Uuid;
 
 use crate::{
@@ -24,6 +25,7 @@ use crate::{
         deck::{BlackCard, Deck, DeckInfo, WhiteCard},
         LobbyState, Player, PlayerInfo, PrivateServerEvent, ServerEvent, Settings,
     },
+    GRACE_PERIOD,
 };
 
 /// Inner mutable state of a lobby, protected by RwLock.
@@ -41,6 +43,8 @@ pub struct LobbyData {
 
 /// The overall lobby/game, separating channels from state.
 pub struct Lobby {
+    pub game_task: RwLock<Option<JoinHandle<()>>>,
+    pub disconnect_timers: DashMap<Uuid, JoinHandle<()>>,
     pub global: Sender<ServerEvent>, // broadcast to all clients
     pub private: DashMap<Uuid, UnboundedSender<PrivateServerEvent>>,
     pub cache: PathBuf,
@@ -65,6 +69,8 @@ impl Lobby {
     /// Create a new lobby with host as first player.
     pub async fn new(cache: PathBuf, host_name: String, host_id: Uuid) -> Result<Arc<Self>> {
         let lobby = Arc::new(Self {
+            game_task: RwLock::new(None),
+            disconnect_timers: DashMap::new(),
             global: Sender::new(100),
             private: DashMap::new(),
             state: RwLock::new(LobbyData::default()),
@@ -132,6 +138,11 @@ impl Lobby {
         }
     }
 
+    /// Remove a player from the private emitter
+    fn remove_private(&self, player_id: &Uuid) {
+        self.private.remove(player_id);
+    }
+
     /// Call this whenever something happens in the lobby
     async fn touch(&self) {
         let mut guard = self.last_activity.write().await;
@@ -168,38 +179,51 @@ impl Lobby {
 
     /// Player joins the lobby
     pub async fn join(&self, player_name: String, player_id: Uuid) -> Result<()> {
-        {
-            let guard = self.state.read().await;
-            if guard.phase != GamePhase::LobbyOpen {
-                return Err(Error::LobbyClosed);
-            }
-            if guard.players.contains_key(&player_id) {
-                return Ok(());
-            }
-            if guard.players.len() >= guard.settings.max_players as usize {
-                return Err(Error::LobbyFull);
-            }
+        if !self.has_phase(GamePhase::LobbyOpen).await {
+            return Err(Error::LobbyClosed);
         }
+
+        let mut guard = self.state.write().await;
+        let is_rejoining = guard.players.contains_key(&player_id);
+        let has_host = guard.players.values().any(|p| p.info.is_host);
+
+        if is_rejoining {
+            if let Some((_, handle)) = self.disconnect_timers.remove(&player_id) {
+                handle.abort();
+            }
+
+            if !has_host {
+                if let Some(player) = guard.players.get_mut(&player_id) {
+                    player.info.is_host = true;
+                }
+            }
+
+            return Ok(());
+        }
+
+        // Not rejoining, new player join
+        if guard.players.len() >= guard.settings.max_players as usize {
+            return Err(Error::LobbyFull);
+        }
+
+        let is_first_player = guard.players.is_empty();
 
         let player_info = PlayerInfo {
             name: player_name,
-            is_host: false,
+            is_host: is_first_player,
             is_czar: false,
             points: 0,
         };
 
-        // upgrade to write lock to add player
-        {
-            let mut guard = self.state.write().await;
-            let new_player = Player {
+        guard.players.insert(
+            player_id,
+            Player {
                 info: player_info.clone(),
                 cards: Vec::new(),
-            };
-            guard.players.insert(player_id, new_player);
-            guard.czar_order.push_back(player_id);
-        }
+            },
+        );
+        guard.czar_order.push_back(player_id);
 
-        // emit now the player join
         self.emit_global(ServerEvent::PlayerJoin {
             player_id,
             player_info,
@@ -220,6 +244,79 @@ impl Lobby {
         Ok(())
     }
 
+    pub async fn player_disconnected(self: &Arc<Lobby>, player_id: Uuid) {
+        // Make sure the player didn't got kicked or removed by anything beforehand
+        let still_present = {
+            let guard = self.state.read().await;
+            guard.players.contains_key(&player_id)
+        };
+        if !still_present {
+            return;
+        }
+
+        let in_lobby = self.has_phase(GamePhase::LobbyOpen).await;
+
+        let lobby = self.clone();
+        let handle = tokio::spawn(async move {
+            // Wait the grace period only when in a lobby
+            if in_lobby {
+                tokio::time::sleep(GRACE_PERIOD).await;
+            }
+            // If player hasn't reconnected, remove
+            if let Err(e) = lobby.timeout_player(&player_id).await {
+                error!("Timed out player '{}' with error: {:?}", player_id, e);
+            }
+        });
+        self.disconnect_timers.insert(player_id, handle);
+    }
+
+    async fn timeout_player(&self, player_id: &Uuid) -> Result<()> {
+        self.disconnect_timers.remove(player_id);
+
+        let mut new_host_id: Option<Uuid> = None;
+        let in_game;
+
+        {
+            let mut guard = self.state.write().await;
+            let was_host = guard
+                .players
+                .get(player_id)
+                .map(|p| p.info.is_host)
+                .unwrap_or(false);
+
+            in_game = !matches!(guard.phase, GamePhase::LobbyOpen | GamePhase::GameOver);
+            guard.players.remove(player_id);
+            guard.czar_order.retain(|id| id != player_id);
+
+            if was_host {
+                if let Some((&new_id, new_player)) = guard.players.iter_mut().next() {
+                    new_player.info.is_host = true;
+                    new_host_id = Some(new_id);
+                }
+            }
+        }
+
+        self.emit_global(ServerEvent::PlayerRemove {
+            player_id: *player_id,
+        })?;
+        if let Some(new_id) = new_host_id {
+            self.emit_global(ServerEvent::AssignHost { player_id: new_id })?;
+        }
+        self.emit_private(player_id, PrivateServerEvent::Timeout)
+            .await?;
+
+        self.remove_private(player_id);
+
+        // If player left during a game, abort the game and end it for everyone
+        if in_game {
+            self.cancel_task().await;
+            self.set_phase_and_emit(GamePhase::GameOver, ServerEvent::GameOver)
+                .await?;
+        }
+
+        Ok(())
+    }
+
     async fn remove_player(&self, player_id: &Uuid) -> Result<()> {
         {
             let mut guard = self.state.write().await;
@@ -229,11 +326,13 @@ impl Lobby {
 
         self.touch().await;
 
-        self.emit_global(ServerEvent::PlayerKick {
+        self.emit_global(ServerEvent::PlayerRemove {
             player_id: *player_id,
         })?;
         self.emit_private(player_id, PrivateServerEvent::Kick)
             .await?;
+
+        self.remove_private(player_id);
 
         Ok(())
     }
@@ -299,6 +398,18 @@ impl Lobby {
         }
     }
 
+    /// Assigns the task handle to the game task
+    pub async fn assign_task(&self, handle: JoinHandle<()>) {
+        *self.game_task.write().await = Some(handle);
+    }
+
+    /// Cancels the game task if any exist
+    pub async fn cancel_task(&self) {
+        if let Some(handle) = self.game_task.write().await.take() {
+            handle.abort();
+        }
+    }
+
     /// Start the game on a different thread
     pub async fn start_game(self: &Arc<Self>, player_id: &Uuid) -> Result<()> {
         if self.is_host(player_id).await {
@@ -307,9 +418,13 @@ impl Lobby {
                 && self.min_decks().await?
             {
                 let lobby = self.clone();
-                tokio::spawn(async move {
-                    let _ = Lobby::run_game(lobby).await;
+                let handle = tokio::spawn(async move {
+                    if let Err(e) = Lobby::run_game(lobby).await {
+                        error!("Game loop exited with error: {:?}", e);
+                    }
                 });
+                *self.game_task.write().await = Some(handle);
+
                 Ok(())
             } else {
                 Err(Error::LobbyStart)
@@ -399,7 +514,7 @@ impl Lobby {
                 let black_card = self.fill_black_card().await?;
 
                 self.emit_global(ServerEvent::StartRound {
-                    player_id,
+                    czar_id: player_id,
                     black_card,
                 })
                 .unwrap();

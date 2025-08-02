@@ -89,10 +89,30 @@
 						lobby_state.players[joined_id] = joined_info;
 					}
 					break;
-				case 'PlayerKick':
+				case 'PlayerRemove':
 					let kicked_id = msg.data.player_id;
 					if (lobby_state) {
 						delete lobby_state.players[kicked_id];
+					}
+					if (isGaming) {
+						toaster.error({
+							title: 'Game Interrupted',
+							description: 'A player left the lobby during the game, so it could not continue.'
+						});
+					}
+					break;
+				case 'AssignHost':
+					let host_id = msg.data.player_id;
+					let new_host = lobby_state?.players[host_id];
+					if (new_host) {
+						new_host.is_host = true;
+					}
+					if (host_id === own_id) {
+						toaster.warning({
+							title: 'You Are Now the Host',
+							description:
+								'The previous host has left the lobby, so you have been assigned as the new host.'
+						});
 					}
 					break;
 				case 'LobbyState':
@@ -113,11 +133,11 @@
 
 					// apply the send state
 					if (lobby_state) {
-						let id = msg.data.player_id;
-						let czar = lobby_state.players[id];
+						let czar_id = msg.data.czar_id;
+						let czar = lobby_state.players[czar_id];
 						if (czar) {
 							czar.is_czar = true;
-							if (id == own_id) {
+							if (czar_id == own_id) {
 								toaster.info({ title: `You are the Czar!` });
 							} else {
 								toaster.info({ title: `${czar.name} is the Czar!` });
@@ -182,11 +202,25 @@
 					}
 					round = 0;
 					break;
+				case 'Timeout':
+					toaster.warning({
+						title: 'Timed Out',
+						description:
+							'You have been removed from the lobby due to inactivity. Reload to reconnect!'
+					});
+
+					// clear state directly to improve ux
+					disconnect();
+
+					break;
 				case 'Kick':
 					toaster.warning({
 						title: 'Kicked',
 						description: 'You have been removed from the lobby by the host.'
 					});
+
+					// clear state directly to improve ux
+					disconnect();
 
 					// close ws
 					ws?.close();
@@ -209,10 +243,12 @@
 			}
 		};
 
-		ws.onclose = () => {
-			lobby_state = undefined;
-			connected = false;
-		};
+		ws.onclose = disconnect;
+	}
+
+	function disconnect() {
+		lobby_state = undefined;
+		connected = false;
 	}
 
 	function join_lobby() {
@@ -250,7 +286,7 @@
 	onbeforeunload={(e) => {
 		if (isGaming || isOver) {
 			e.preventDefault();
-			e.returnValue = '';
+			return '';
 		}
 	}}
 />

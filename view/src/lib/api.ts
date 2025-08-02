@@ -12,7 +12,7 @@ namespace api {
 		| { kind: 'Unauthorized' }
 		| { kind: 'Deck'; value: string }
 		| { kind: 'Reqwest'; value: string }
-		| { kind: 'Websocket'; value: string }
+		| { kind: 'WebSocket'; value: string }
 		| { kind: 'FileSystem'; value: string }
 		| { kind: 'Json'; value: string };
 
@@ -37,19 +37,12 @@ namespace api {
 		}
 	}
 
-	// === REST calls ===
+	// === REST call ===
 
 	export async function create_lobby(name: string, id: string): Promise<LobbyId> {
 		return fetch_api(`${API_BASE}/lobby`, {
 			method: 'POST',
 			body: JSON.stringify({ name, id })
-		});
-	}
-
-	export async function close_lobby(uuid: string): Promise<string> {
-		return fetch_api(`${API_BASE}/lobby`, {
-			method: 'DELETE',
-			body: JSON.stringify({ uuid })
 		});
 	}
 
@@ -106,8 +99,9 @@ namespace api {
 
 	export type ServerEvent =
 		| { type: 'PlayerJoin'; data: { player_id: Uuid; player_info: PlayerInfo } }
-		| { type: 'PlayerKick'; data: { player_id: Uuid } }
-		| { type: 'StartRound'; data: { player_id: Uuid; black_card: BlackCard } }
+		| { type: 'PlayerRemove'; data: { player_id: Uuid } }
+		| { type: 'AssignHost'; data: { player_id: Uuid } }
+		| { type: 'StartRound'; data: { czar_id: Uuid; black_card: BlackCard } }
 		| { type: 'CardsSubmitted'; data: { player_id: Uuid } }
 		| { type: 'UpdateDecks'; data: { decks: DeckInfo[] } }
 		| { type: 'UpdateSettings'; data: { settings: Settings } }
@@ -123,6 +117,7 @@ namespace api {
 				data: LobbyState;
 		  }
 		| { type: 'UpdateHand'; data: { cards: WhiteCard[] } }
+		| { type: 'Timeout' }
 		| { type: 'Kick' }
 		| { type: 'Error'; data: api.Error };
 

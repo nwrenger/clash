@@ -24,6 +24,11 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 
 use crate::server::{create_lobby, ws::ws_handler, ServerState};
 
+/// General timeout interval is 30 Minutes
+pub const TIMEOUT_INTERVAL: Duration = Duration::from_secs(30 * 60);
+/// The grace period, where players are able to rejoin, is 1 Minute
+pub const GRACE_PERIOD: Duration = Duration::from_secs(60);
+
 /// Command-line arguments structure using Clap
 #[derive(Parser, Debug)]
 #[command(name = env!("CARGO_PKG_NAME"))]
@@ -86,7 +91,7 @@ async fn main() {
         let janitor = state.clone();
         tokio::spawn(async move {
             // tick every 30 minutes
-            let mut tick = interval(Duration::from_secs(30 * 60));
+            let mut tick = interval(TIMEOUT_INTERVAL);
             loop {
                 tick.tick().await;
                 let removed = janitor.clean_unused().await;
