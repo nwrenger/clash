@@ -242,7 +242,8 @@ impl Lobby {
 
     pub async fn kick(&self, own_id: &Uuid, player_id: &Uuid) -> Result<()> {
         if self.is_host(own_id).await && own_id != player_id {
-            self.remove_player(player_id).await?;
+            self.remove_player(player_id, Some(PrivateServerEvent::Kick))
+                .await?;
         } else {
             return Err(Error::Unauthorized);
         }
@@ -268,17 +269,24 @@ impl Lobby {
             if in_lobby {
                 tokio::time::sleep(GRACE_PERIOD).await;
             }
-            // If player hasn't reconnected, remove
-            if let Err(e) = lobby.timeout_player(&player_id).await {
+            // If player hasn't reconnected, remove them (also remove them from the disconnect_timers map)
+            lobby.disconnect_timers.remove(&player_id);
+            if let Err(e) = lobby
+                .remove_player(&player_id, Some(PrivateServerEvent::Timeout))
+                .await
+            {
                 error!("Timed out player '{}' with error: {:?}", player_id, e);
             }
         });
         self.disconnect_timers.insert(player_id, handle);
     }
 
-    async fn timeout_player(&self, player_id: &Uuid) -> Result<()> {
-        self.disconnect_timers.remove(player_id);
-
+    /// Use to remove a player from the lobby
+    pub async fn remove_player(
+        &self,
+        player_id: &Uuid,
+        event: Option<PrivateServerEvent>,
+    ) -> Result<()> {
         let mut new_host_id: Option<Uuid> = None;
         let in_game;
 
@@ -308,37 +316,18 @@ impl Lobby {
         if let Some(new_id) = new_host_id {
             self.emit_global(ServerEvent::AssignHost { player_id: new_id })?;
         }
-        self.emit_private(player_id, PrivateServerEvent::Timeout)
-            .await?;
+        if let Some(event) = event {
+            self.emit_private(player_id, event).await?;
+        }
 
         self.remove_private(player_id);
 
-        // If player left during a game, abort the game and end it for everyone
+        // If a player was removed during a game, abort the game and end it for everyone
         if in_game {
             self.cancel_task().await;
             self.set_phase_and_emit(GamePhase::GameOver, ServerEvent::GameOver)
                 .await?;
         }
-
-        Ok(())
-    }
-
-    async fn remove_player(&self, player_id: &Uuid) -> Result<()> {
-        {
-            let mut guard = self.state.write().await;
-            guard.players.remove(player_id);
-            guard.czar_order.retain(|id| id != player_id);
-        }
-
-        self.touch().await;
-
-        self.emit_global(ServerEvent::PlayerRemove {
-            player_id: *player_id,
-        })?;
-        self.emit_private(player_id, PrivateServerEvent::Kick)
-            .await?;
-
-        self.remove_private(player_id);
 
         Ok(())
     }
@@ -362,8 +351,10 @@ impl Lobby {
             };
 
             for id in to_remove {
-                self.remove_player(&id).await?;
+                self.remove_player(&id, Some(PrivateServerEvent::Kick))
+                    .await?;
             }
+
             {
                 let mut guard = self.state.write().await;
                 guard.settings = new_settings.clone();

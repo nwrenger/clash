@@ -69,6 +69,7 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
     let (mut global, mut private) = {
         if let Err(msg) = lobby.join(player_name, player_id).await {
             send_private_event(&mut sender, &PrivateServerEvent::Error(msg)).await;
+            lobby.remove_player(&player_id, None).await.ok();
             return;
         }
         (
@@ -95,11 +96,14 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
         }
     });
 
-    if let Err(error) = lobby.send_lobby_state(&player_id).await {
-        lobby
-            .emit_private(&player_id, PrivateServerEvent::Error(error))
-            .await
-            .unwrap();
+    if lobby.send_lobby_state(&player_id).await.is_err() {
+        // Remove player and close connection when this errors
+        //
+        // Note: The only error that can occur inside the `send_lobby_state` function is if the private channel has already been closed.
+        // Therefore, there is no need to try sending an error to the frontend (which would also fail, since it uses the same private channel).
+        // It also doesn't make sense to send with the `remove_player` function a reason via an event because that will also be send over the
+        // broken private channel.
+        lobby.remove_player(&player_id, None).await.ok();
         return;
     }
 
@@ -127,11 +131,11 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
                         }
                     }
                 } {
-                    // hope this does'nt throw an error otherwise :skull: and we should panic
+                    // hope this does'nt throw an error otherwise :skull:
                     lobby
                         .emit_private(&player_id, PrivateServerEvent::Error(error))
                         .await
-                        .unwrap();
+                        .ok();
                 }
             }
         }
