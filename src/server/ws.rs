@@ -7,13 +7,14 @@ use axum::{
 };
 use futures::StreamExt;
 use futures::{stream::SplitSink, SinkExt};
+use serde::Serialize;
 use std::sync::Arc;
 use tokio::time::timeout;
 use uuid::Uuid;
 
 use crate::{
     error::{Error, Result},
-    game::{lobby::Lobby, ClientEvent, PrivateServerEvent, ServerEvent},
+    game::{lobby::Lobby, ClientEvent, PrivateServerEvent},
     server::ServerState,
     GRACE_PERIOD, TIMEOUT_INTERVAL,
 };
@@ -31,17 +32,13 @@ pub async fn ws_handler(
     }
 }
 
-async fn send_private_event(
-    sender: &mut SplitSink<WebSocket, Message>,
-    event: &PrivateServerEvent,
-) {
-    let txt = serde_json::to_string(event).unwrap();
-    sender.send(Message::Text(txt.into())).await.ok();
-}
-
-async fn send_event(sender: &mut SplitSink<WebSocket, Message>, event: &ServerEvent) {
-    let txt = serde_json::to_string(event).unwrap();
-    sender.send(Message::Text(txt.into())).await.ok();
+async fn send_event<T>(sender: &mut SplitSink<WebSocket, Message>, event: &T)
+where
+    T: ?Sized + Serialize,
+{
+    if let Ok(txt) = serde_json::to_string(event) {
+        sender.send(Message::Text(txt.into())).await.ok();
+    }
 }
 
 /// Handles an individual WebSocket connection
@@ -53,14 +50,14 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
     let txt = match timeout(GRACE_PERIOD, receiver.next()).await {
         Ok(Some(Ok(Message::Text(t)))) => t,
         _ => {
-            send_private_event(&mut sender, &PrivateServerEvent::Error(Error::LobbyLogin)).await;
+            send_event(&mut sender, &PrivateServerEvent::Error(Error::LobbyLogin)).await;
             return;
         }
     };
     let (player_name, player_id) = match serde_json::from_str::<ClientEvent>(&txt) {
         Ok(ClientEvent::JoinLobby { name, id }) => (name, id),
         _ => {
-            send_private_event(&mut sender, &PrivateServerEvent::Error(Error::LobbyLogin)).await;
+            send_event(&mut sender, &PrivateServerEvent::Error(Error::LobbyLogin)).await;
             return;
         }
     };
@@ -68,7 +65,7 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
     // Open global and private receivers and join the lobby
     let (mut global, mut private) = {
         if let Err(msg) = lobby.join(player_name, player_id).await {
-            send_private_event(&mut sender, &PrivateServerEvent::Error(msg)).await;
+            send_event(&mut sender, &PrivateServerEvent::Error(msg)).await;
             lobby.remove_player(&player_id, None).await.ok();
             return;
         }
@@ -87,8 +84,9 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
               }
 
               Some(private_event) = private.recv() => {
-                send_private_event(&mut sender, &private_event).await;
+                send_event(&mut sender, &private_event).await;
               }
+
               else => {
                   return;
               }

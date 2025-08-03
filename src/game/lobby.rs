@@ -16,7 +16,7 @@ use tokio::{
     time::Instant,
 };
 use tokio::{task::JoinHandle, time::sleep};
-use tracing::error;
+use tracing::{error, info};
 use uuid::Uuid;
 
 use crate::{
@@ -67,7 +67,7 @@ pub enum GamePhase {
 
 impl Drop for Lobby {
     fn drop(&mut self) {
-        tracing::info!("Lobby dropped");
+        info!("Lobby dropped");
     }
 }
 
@@ -513,8 +513,7 @@ impl Lobby {
                 self.emit_global(ServerEvent::StartRound {
                     czar_id: player_id,
                     black_card,
-                })
-                .unwrap();
+                })?;
             }
 
             // re-queue
@@ -604,24 +603,27 @@ impl Lobby {
             let guard = self.state.read().await;
             guard.czar_pick
         };
-        if let Some(idx) = czar_pick {
-            let player_id = {
+        if let Some(index) = czar_pick {
+            if let Some(player_id) = {
                 let mut guard = self.state.write().await;
-                let (player_id, _) = guard.submissions[idx].clone();
-                if let Some(p) = guard.players.get_mut(&player_id) {
-                    p.info.points += 1;
+                if let Some((player_id, _)) = guard.submissions.get(index).cloned() {
+                    if let Some(p) = guard.players.get_mut(&player_id) {
+                        p.info.points += 1;
+                    }
+                    Some(player_id)
+                } else {
+                    None
                 }
-                player_id
-            };
-
-            self.set_phase_and_emit(
-                GamePhase::RoundFinished,
-                ServerEvent::RoundResult {
-                    player_id,
-                    winning_card_index: idx,
-                },
-            )
-            .await?;
+            } {
+                self.set_phase_and_emit(
+                    GamePhase::RoundFinished,
+                    ServerEvent::RoundResult {
+                        player_id,
+                        winning_card_index: index,
+                    },
+                )
+                .await?;
+            }
         } else {
             self.emit_global(ServerEvent::RoundSkip)?;
         }
@@ -721,7 +723,11 @@ impl Lobby {
             // get selected cards
             let mut cards = Vec::new();
             for index in &indexes {
-                cards.push(player.cards[*index].clone());
+                if let Some(white_card) = player.cards.get(*index).cloned() {
+                    cards.push(white_card);
+                } else {
+                    return Err(Error::CardSubmission);
+                }
             }
 
             // remove selected indexes
