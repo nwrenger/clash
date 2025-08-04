@@ -179,7 +179,7 @@
 										<span>
 											<span>{deck.name}</span>
 											<a
-												class="hover:anchor text-xs! opacity-80 transition-colors"
+												class="anchor text-xs opacity-80"
 												href="https://cast.clrtd.com/deck/{deck.deckcode}"
 												target="_blank">{deck.deckcode}</a
 											>
