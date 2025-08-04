@@ -126,21 +126,14 @@ impl Lobby {
     }
 
     /// Emit a global event without locking state
-    pub fn emit_global(&self, event: ServerEvent) -> Result<()> {
-        self.global.send(event)?;
-        Ok(())
+    pub fn emit_global(&self, event: ServerEvent) {
+        self.global.send(event).ok();
     }
 
     /// Emit a private event
-    pub async fn emit_private(&self, player_id: &Uuid, event: PrivateServerEvent) -> Result<()> {
+    pub async fn emit_private(&self, player_id: &Uuid, event: PrivateServerEvent) {
         if let Some(tx) = self.private.get(player_id) {
-            tx.send(event)?;
-            Ok(())
-        } else {
-            Err(Error::WebSocket(format!(
-                "No private channel for {}",
-                player_id
-            )))
+            tx.send(event).ok();
         }
     }
 
@@ -156,7 +149,7 @@ impl Lobby {
     }
 
     /// Send the current lobby state globally
-    pub async fn send_lobby_state(&self, player_id: &Uuid) -> Result<()> {
+    pub async fn send_lobby_state(&self, player_id: &Uuid) {
         let (players, settings, phase) = {
             let guard = self.state.read().await;
             let players = guard
@@ -180,7 +173,7 @@ impl Lobby {
                 phase,
             }),
         )
-        .await
+        .await;
     }
 
     /// Player joins the lobby
@@ -233,7 +226,7 @@ impl Lobby {
         self.emit_global(ServerEvent::PlayerJoin {
             player_id,
             player_info,
-        })?;
+        });
 
         self.touch().await;
 
@@ -243,7 +236,7 @@ impl Lobby {
     pub async fn kick(&self, own_id: &Uuid, player_id: &Uuid) -> Result<()> {
         if self.is_host(own_id).await && own_id != player_id {
             self.remove_player(player_id, Some(PrivateServerEvent::Kick))
-                .await?;
+                .await;
         } else {
             return Err(Error::Unauthorized);
         }
@@ -252,10 +245,11 @@ impl Lobby {
     }
 
     pub async fn player_disconnected(self: &Arc<Lobby>, player_id: Uuid) {
-        // Make sure the player didn't got kicked or removed by anything beforehand
+        // Make sure the player didn't got kicked, removed by anything beforehand or is in the disconnecting phase
         let still_present = {
             let guard = self.state.read().await;
             guard.players.contains_key(&player_id)
+                && !self.disconnect_timers.contains_key(&player_id)
         };
         if !still_present {
             return;
@@ -271,22 +265,15 @@ impl Lobby {
             }
             // If player hasn't reconnected, remove them (also remove them from the disconnect_timers map)
             lobby.disconnect_timers.remove(&player_id);
-            if let Err(e) = lobby
+            lobby
                 .remove_player(&player_id, Some(PrivateServerEvent::Timeout))
-                .await
-            {
-                error!("Timed out player '{}' with error: {:?}", player_id, e);
-            }
+                .await;
         });
         self.disconnect_timers.insert(player_id, handle);
     }
 
     /// Use to remove a player from the lobby
-    pub async fn remove_player(
-        &self,
-        player_id: &Uuid,
-        event: Option<PrivateServerEvent>,
-    ) -> Result<()> {
+    async fn remove_player(&self, player_id: &Uuid, event: Option<PrivateServerEvent>) {
         let mut new_host_id: Option<Uuid> = None;
         let in_game;
 
@@ -312,12 +299,12 @@ impl Lobby {
 
         self.emit_global(ServerEvent::PlayerRemove {
             player_id: *player_id,
-        })?;
+        });
         if let Some(new_id) = new_host_id {
-            self.emit_global(ServerEvent::AssignHost { player_id: new_id })?;
+            self.emit_global(ServerEvent::AssignHost { player_id: new_id });
         }
         if let Some(event) = event {
-            self.emit_private(player_id, event).await?;
+            self.emit_private(player_id, event).await;
         }
 
         self.remove_private(player_id);
@@ -326,10 +313,8 @@ impl Lobby {
         if in_game {
             self.cancel_task().await;
             self.set_phase_and_emit(GamePhase::GameOver, ServerEvent::GameOver)
-                .await?;
+                .await;
         }
-
-        Ok(())
     }
 
     /// Update settings (host only)
@@ -352,7 +337,7 @@ impl Lobby {
 
             for id in to_remove {
                 self.remove_player(&id, Some(PrivateServerEvent::Kick))
-                    .await?;
+                    .await;
             }
 
             {
@@ -362,7 +347,9 @@ impl Lobby {
 
             self.emit_global(ServerEvent::UpdateSettings {
                 settings: new_settings,
-            })
+            });
+
+            Ok(())
         } else {
             Err(Error::Unauthorized)
         }
@@ -389,7 +376,9 @@ impl Lobby {
 
             // send update
             self.touch().await;
-            self.emit_global(ServerEvent::UpdateDecks { decks })
+            self.emit_global(ServerEvent::UpdateDecks { decks });
+
+            Ok(())
         } else {
             Err(Error::Unauthorized)
         }
@@ -441,9 +430,9 @@ impl Lobby {
 
             let no_subs = { self.state.read().await.submissions.is_empty() };
             if no_subs {
-                self.emit_global(ServerEvent::RoundSkip)?;
+                self.emit_global(ServerEvent::RoundSkip);
             } else {
-                self.judging().await?;
+                self.judging().await;
             }
 
             // wait the normal time
@@ -463,7 +452,7 @@ impl Lobby {
         }
 
         self.set_phase_and_emit(GamePhase::GameOver, ServerEvent::GameOver)
-            .await?;
+            .await;
         Ok(())
     }
 
@@ -513,7 +502,7 @@ impl Lobby {
                 self.emit_global(ServerEvent::StartRound {
                     czar_id: player_id,
                     black_card,
-                })?;
+                });
             }
 
             // re-queue
@@ -561,7 +550,7 @@ impl Lobby {
     }
 
     /// Czar picks winner
-    async fn judging(&self) -> Result<()> {
+    async fn judging(&self) {
         let cards = {
             let guard = self.state.read().await;
             guard.submissions.iter().map(|(_, c)| c.clone()).collect()
@@ -573,7 +562,7 @@ impl Lobby {
                 selected_cards: cards,
             },
         )
-        .await?;
+        .await;
 
         let max_judging_time_secs = {
             let guard = self.state.read().await;
@@ -622,13 +611,11 @@ impl Lobby {
                         winning_card_index: index,
                     },
                 )
-                .await?;
+                .await;
             }
         } else {
-            self.emit_global(ServerEvent::RoundSkip)?;
+            self.emit_global(ServerEvent::RoundSkip);
         }
-
-        Ok(())
     }
 
     /// Fill a single black card
@@ -686,7 +673,7 @@ impl Lobby {
             };
             if let Some(hand) = hand {
                 self.emit_private(&player_id, PrivateServerEvent::UpdateHand { cards: hand })
-                    .await?;
+                    .await;
             }
         }
 
@@ -745,7 +732,9 @@ impl Lobby {
         self.submission_notify.notify_one();
         self.emit_global(ServerEvent::CardsSubmitted {
             player_id: *player_id,
-        })
+        });
+
+        Ok(())
     }
 
     /// Czar submits choice
@@ -777,9 +766,9 @@ impl Lobby {
         self.touch().await;
     }
 
-    async fn set_phase_and_emit(&self, phase: GamePhase, evt: ServerEvent) -> Result<()> {
+    async fn set_phase_and_emit(&self, phase: GamePhase, evt: ServerEvent) {
         self.set_phase(phase).await;
-        self.emit_global(evt)
+        self.emit_global(evt);
     }
 
     pub async fn reset_game(&self, player_id: &Uuid) -> Result<()> {
@@ -793,7 +782,9 @@ impl Lobby {
                 p.cards.clear();
             }
 
-            self.emit_global(ServerEvent::LobbyReset)
+            self.emit_global(ServerEvent::LobbyReset);
+
+            Ok(())
         } else {
             Err(Error::Unauthorized)
         }

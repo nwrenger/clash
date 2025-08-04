@@ -1,8 +1,6 @@
 use axum::{http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 
-use crate::game::{PrivateServerEvent, ServerEvent};
-
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -28,8 +26,6 @@ pub enum Error {
     Deck(String),
     /// Reqwest related Errors
     Reqwest(String),
-    /// WebSocket related Errors
-    WebSocket(String),
     /// File System Error
     FileSystem(String),
     /// Json Serialzing/Desializing Error
@@ -45,18 +41,6 @@ impl From<std::io::Error> for Error {
 impl From<reqwest::Error> for Error {
     fn from(err: reqwest::Error) -> Self {
         Error::Reqwest(err.to_string())
-    }
-}
-
-impl From<tokio::sync::broadcast::error::SendError<ServerEvent>> for Error {
-    fn from(err: tokio::sync::broadcast::error::SendError<ServerEvent>) -> Self {
-        Error::WebSocket(err.to_string())
-    }
-}
-
-impl From<tokio::sync::mpsc::error::SendError<PrivateServerEvent>> for Error {
-    fn from(err: tokio::sync::mpsc::error::SendError<PrivateServerEvent>) -> Self {
-        Error::WebSocket(err.to_string())
     }
 }
 
@@ -80,7 +64,7 @@ impl IntoResponse for Error {
             | Error::LobbyStart
             | Error::CzarChoice
             | Error::FileSystem(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Error::WebSocket(_) | Error::Reqwest(_) => StatusCode::SERVICE_UNAVAILABLE,
+            Error::Reqwest(_) => StatusCode::SERVICE_UNAVAILABLE,
         };
         (status, Json(self)).into_response()
     }

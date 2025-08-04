@@ -12,7 +12,6 @@ namespace api {
 		| { kind: 'Unauthorized' }
 		| { kind: 'Deck'; value: string }
 		| { kind: 'Reqwest'; value: string }
-		| { kind: 'WebSocket'; value: string }
 		| { kind: 'FileSystem'; value: string }
 		| { kind: 'Json'; value: string };
 

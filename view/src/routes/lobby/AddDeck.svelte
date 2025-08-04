@@ -33,7 +33,6 @@
 	{#snippet trigger()}
 		<button class="btn preset-filled-primary-500 flex w-full sm:w-auto" title="Add Deck">
 			Add Deck
-			<!-- <WalletCards size={18} /> -->
 		</button>
 	{/snippet}
 	{#snippet content()}
