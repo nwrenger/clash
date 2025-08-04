@@ -83,8 +83,6 @@ function error_msg(error: api.Error): Options {
 			return { title: 'Deck Error', description: error.value };
 		case 'Reqwest':
 			return { title: 'Third Party Request Error', description: error.value };
-		case 'WebSocket':
-			return { title: 'Websocket Error', description: error.value };
 		case 'FileSystem':
 			return { title: 'File System Error', description: error.value };
 		case 'Json':
