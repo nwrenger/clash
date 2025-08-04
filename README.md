@@ -52,7 +52,7 @@ bun run dev
 
 ## Hosting & Scaling Limits
 
-**CLASH** has been tested to handle up to **2–4 lobbies** with **5,000 players each**, or **10–20 lobbies** with **1,000 players each**, on typical modern server hardware ([Oracle's Ampere A1 in free tier](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm)).
+**CLASH** has been tested to handle up to **2–4 lobbies** with **5,000 players each**, or **10–30 lobbies** with **1,000 players each**, on typical modern server hardware ([Oracle's Ampere A1 in free tier](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm)).
 
 > ⚠️ **Note:** For very large lobbies (2,000+ players), browser performance becomes the primary bottleneck. Joining or updating lobbies with thousands of players can lag or freeze the UI, especially on lower-end devices.
 >
