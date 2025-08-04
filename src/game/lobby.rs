@@ -263,8 +263,7 @@ impl Lobby {
             if in_lobby {
                 tokio::time::sleep(GRACE_PERIOD).await;
             }
-            // If player hasn't reconnected, remove them (also remove them from the disconnect_timers map)
-            lobby.disconnect_timers.remove(&player_id);
+            // If player hasn't reconnected, remove them
             lobby
                 .remove_player(&player_id, Some(PrivateServerEvent::Timeout))
                 .await;
@@ -276,6 +275,9 @@ impl Lobby {
     async fn remove_player(&self, player_id: &Uuid, event: Option<PrivateServerEvent>) {
         let mut new_host_id: Option<Uuid> = None;
         let in_game;
+
+        // Also remove the player from the disconnect_timers
+        self.disconnect_timers.remove(player_id);
 
         {
             let mut guard = self.state.write().await;
