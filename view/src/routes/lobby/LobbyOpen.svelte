@@ -179,7 +179,7 @@
 										<span>
 											<span>{deck.name}</span>
 											<a
-												class="anchor text-xs opacity-80"
+												class="anchor text-xs"
 												href="https://cast.clrtd.com/deck/{deck.deckcode}"
 												target="_blank">{deck.deckcode}</a
 											>
