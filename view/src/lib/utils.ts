@@ -56,5 +56,5 @@ export function sortedEntries<K extends string, V extends api.PlayerInfo>(
 	rec: Record<K, V> | undefined
 ): [K, V][] {
 	let arr = Object.entries(rec as any) as [K, V][];
-	return arr.sort(([_keyA, valA], [_keyB, valB]) => valA.name.localeCompare(valA.name));
+	return arr.sort(([_keyA, valA], [_keyB, valB]) => valA.name.localeCompare(valB.name));
 }
