@@ -33,7 +33,15 @@
 		let target = e.target as HTMLInputElement;
 		// Only allow integers and remove leading zeros
 		let digits: string = target.value.replace(/[^0-9]/g, '').replace(/^0+/, '');
-		// update value and display
+		// Cap at Rust u32 max
+		if (digits.length > 10) {
+			digits = digits.slice(0, 10);
+		}
+		const U32_MAX_STR = '4294967295';
+		if (digits.length === 10 && digits > U32_MAX_STR) {
+			digits = U32_MAX_STR;
+		}
+		// Update value and display
 		if (changable_settings) changable_settings.max_players = parseInt(digits) || (undefined as any);
 		target.value = digits;
 	}
