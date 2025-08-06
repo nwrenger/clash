@@ -1,12 +1,13 @@
 <script lang="ts">
 	import api from '$lib/api';
 	import { Modal } from '@skeletonlabs/skeleton-svelte';
+	import type { Connection } from './+page.svelte';
 
 	interface Props {
-		ws: WebSocket | undefined;
+		connection: Connection;
 	}
 
-	let { ws }: Props = $props();
+	let { connection }: Props = $props();
 
 	let deckcode = $state('');
 	let openState = $state(false);
@@ -18,7 +19,7 @@
 	}
 
 	function add() {
-		api.send_ws(ws!, { type: 'AddDeck', data: { deckcode } });
+		api.send_ws(connection.ws!, { type: 'AddDeck', data: { deckcode } });
 		modalClose();
 	}
 </script>

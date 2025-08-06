@@ -1,46 +1,81 @@
+<script lang="ts" module>
+	export interface Connection {
+		ws?: WebSocket;
+		connected: boolean;
+	}
+
+	export interface Own {
+		id: api.Uuid;
+		name: string;
+		logged_in: boolean;
+		cards: api.WhiteCard[];
+		selected_cards: number[];
+	}
+
+	export interface Lobby {
+		id: string;
+		state?: api.LobbyState;
+	}
+
+	export interface Round {
+		count: number;
+		black_card?: api.BlackCard;
+		revealed_cards: api.WhiteCard[][];
+		result?: { player_id: api.Uuid; winning_card_index: number };
+		time: { self?: number };
+	}
+</script>
+
 <script lang="ts">
 	import { page } from '$app/state';
-	import api from '$lib/api';
-	import { own } from '$lib/state';
-	import { show_error, toaster } from '$lib/toaster';
 	import { onDestroy, onMount } from 'svelte';
+	import { beforeNavigate } from '$app/navigation';
+
+	import api from '$lib/api';
+	import { credentials } from '$lib/state';
+	import { sortedEntries } from '$lib/utils';
+	import { show_error, toaster } from '$lib/toaster';
+
+	import Joining from './Joining.svelte';
 	import LobbyOpen from './LobbyOpen.svelte';
 	import TopBar from './TopBar.svelte';
 	import Hand from './Hand.svelte';
-	import BlackCard from './BlackCard.svelte';
-	import { sortedEntries } from '$lib/utils';
-	import Joining from './Joining.svelte';
+	import Board from './Board.svelte';
 	import GameOver from './GameOver.svelte';
-	import { beforeNavigate } from '$app/navigation';
 
-	let lobby_id: string = $state('');
-	let logged_in: boolean = $state(false);
-	let own_id: api.Uuid = $state(crypto.randomUUID());
-	let own_name = $state('');
-
-	let ws: WebSocket | undefined = $state();
-	let connected = $state(false);
-
-	let lobby_state: api.LobbyState | undefined = $state();
-	let cards: api.WhiteCard[] = $state([]);
-	let self_selected_cards: number[] = $state([]);
-	let revealed_cards: api.WhiteCard[][] = $state([]);
-	let black_card: api.BlackCard | undefined = $state();
-	let round = $state(0);
-	let round_result: { player_id: api.Uuid; winning_card_index: number } | undefined = $state();
-
-	let isJoining = $derived(!lobby_state && connected);
-	let isOpen = $derived(lobby_state?.phase == 'LobbyOpen');
-	let isSubmitting = $derived(lobby_state?.phase == 'Submitting');
-	let isJudging = $derived(lobby_state?.phase == 'Judging');
-	let isFinished = $derived(lobby_state?.phase == 'RoundFinished');
-	let isGaming = $derived(isSubmitting || isJudging || isFinished);
-	let isOver = $derived(lobby_state?.phase == 'GameOver');
-	let time: { self?: number } = $state({});
-
-	onDestroy(() => {
-		ws?.close();
+	let connection: Connection = $state({
+		ws: undefined,
+		connected: false
 	});
+
+	let own: Own = $state({
+		id: crypto.randomUUID(),
+		name: '',
+		logged_in: false,
+		cards: [],
+		selected_cards: []
+	});
+
+	let lobby: Lobby = $state({
+		id: '',
+		state: undefined
+	});
+
+	let round: Round = $state({
+		count: 0,
+		black_card: undefined,
+		revealed_cards: [],
+		result: undefined,
+		time: {}
+	});
+
+	let isJoining = $derived(!lobby.state && connection.connected);
+	let isOpen = $derived(lobby.state?.phase == 'LobbyOpen');
+	let isSubmitting = $derived(lobby.state?.phase == 'Submitting');
+	let isJudging = $derived(lobby.state?.phase == 'Judging');
+	let isFinished = $derived(lobby.state?.phase == 'RoundFinished');
+	let isGaming = $derived(isSubmitting || isJudging || isFinished);
+	let isOver = $derived(lobby.state?.phase == 'GameOver');
 
 	// Prevent Navigation when in Game/Game Over
 	beforeNavigate(({ cancel, type }) => {
@@ -53,220 +88,292 @@
 		}
 	});
 
+	onDestroy(() => {
+		connection.ws?.close();
+	});
+
 	onMount(() => {
-		lobby_id = page.url.searchParams.get('id') || '';
+		lobby.id = page.url.searchParams.get('id') || '';
 
 		// get stored data if already logged in
-		logged_in = $own?.lobby_id == lobby_id;
-		if ($own && logged_in) {
-			own_id = $own.id;
-			own_name = $own.name;
+		own.logged_in = $credentials?.lobby_id == lobby.id;
+		if ($credentials && own.logged_in) {
+			own.id = $credentials.id;
+			own.name = $credentials.name;
 		}
 
 		connect();
 	});
 
 	function connect() {
-		ws = api.connect_ws(lobby_id as api.Uuid);
+		connection.ws = api.connect_ws(lobby.id as api.Uuid);
 
-		ws.onopen = () => {
-			connected = true;
-			// joins lobby if player did already join once
-			if (logged_in) join_lobby();
+		connection.ws.onopen = () => {
+			connection.connected = true;
+			// Join lobby if player did already join once
+			if (own.logged_in) join_lobby();
 		};
 
-		ws.onerror = () => {
+		connection.ws.onerror = () => {
 			show_error({ kind: 'LobbyNotFound' });
 		};
 
-		ws.onmessage = (event) => {
+		connection.ws.onmessage = (event) => {
 			const msg: api.IncommingEvent = JSON.parse(event.data);
-			switch (msg.type) {
-				case 'PlayerJoin':
-					let joined_id = msg.data.player_id;
-					let joined_info = msg.data.player_info;
-					if (lobby_state) {
-						lobby_state.players[joined_id] = joined_info;
-					}
-					break;
-				case 'PlayerRemove':
-					let kicked_id = msg.data.player_id;
-					if (lobby_state) {
-						delete lobby_state.players[kicked_id];
-					}
-					if (isGaming) {
-						toaster.error({
-							title: 'Game Interrupted',
-							description: 'A player left the lobby during the game, so it could not continue.'
-						});
-					}
-					break;
-				case 'AssignHost':
-					let host_id = msg.data.player_id;
-					let new_host = lobby_state?.players[host_id];
-					if (new_host) {
-						new_host.is_host = true;
-					}
-					if (host_id === own_id) {
-						toaster.warning({
-							title: 'You Are Now the Host',
-							description:
-								'The previous host has left the lobby, so you have been assigned as the new host.'
-						});
-					}
-					break;
-				case 'LobbyState':
-					lobby_state = msg.data;
-					break;
-				case 'StartRound':
-					set_phase('Submitting');
-					round += 1;
-
-					// reset everything
-					self_selected_cards = [];
-					black_card = undefined;
-					revealed_cards = [];
-					round_result = undefined;
-					for (const [_, player] of sortedEntries(lobby_state?.players)) {
-						player.is_czar = false;
-					}
-
-					// apply the send state
-					if (lobby_state) {
-						let czar_id = msg.data.czar_id;
-						let czar = lobby_state.players[czar_id];
-						if (czar) {
-							czar.is_czar = true;
-							if (czar_id == own_id) {
-								toaster.info({ title: `You are the Czar!` });
-							} else {
-								toaster.info({ title: `${czar.name} is the Czar!` });
-							}
-						}
-					}
-					black_card = msg.data.black_card;
-					break;
-				case 'CardsSubmitted':
-					let id = msg.data.player_id;
-					let player_submit = lobby_state?.players[id];
-					let placeholders = [];
-					if (player_submit && black_card) {
-						for (let i = 0; i < black_card.fields; i++) {
-							if (id === own_id) {
-								placeholders.push({ text: 'Your Card' });
-							} else {
-								placeholders.push({ text: `Card by ${player_submit.name}` });
-							}
-						}
-						revealed_cards.push(placeholders);
-					}
-					break;
-				case 'UpdateDecks':
-					if (lobby_state) lobby_state.settings.decks = msg.data.decks;
-					break;
-				case 'UpdateSettings':
-					if (lobby_state) lobby_state.settings = msg.data.settings;
-					break;
-				case 'RevealCards':
-					set_phase('Judging');
-					revealed_cards = msg.data.selected_cards;
-					break;
-				case 'RoundResult':
-					set_phase('RoundFinished');
-					round_result = msg.data;
-					let winner = lobby_state?.players[round_result.player_id];
-					if (winner) {
-						winner.points += 1;
-						if (round_result.player_id == own_id) {
-							toaster.info({ title: `You are the winner of this round!` });
-						} else {
-							toaster.info({ title: `${winner.name} is the winner of this round!` });
-						}
-					}
-					break;
-				case 'RoundSkip':
-					set_phase('RoundFinished');
-					toaster.info({
-						title: 'Skipped',
-						description:
-							'The current round was skipped due to the players or the Czar not selecting any cards.'
-					});
-					break;
-				case 'GameOver':
-					set_phase('GameOver');
-					break;
-				case 'LobbyReset':
-					set_phase('LobbyOpen');
-					for (const [_, player] of sortedEntries(lobby_state?.players)) {
-						player.points = 0;
-					}
-					round = 0;
-					break;
-				case 'Timeout':
-					toaster.warning({
-						title: 'Timed Out',
-						description:
-							'You have been removed from the lobby due to inactivity. Reload to reconnect!'
-					});
-
-					// clear state directly to improve ux
-					disconnect();
-
-					break;
-				case 'Kick':
-					toaster.warning({
-						title: 'Kicked',
-						description: 'You have been removed from the lobby by the host.'
-					});
-
-					// clear state directly to improve ux
-					disconnect();
-
-					// close ws
-					ws?.close();
-
-					// remove remembered credentials
-					logged_in = false;
-					$own = null;
-					own_name = '';
-					own_id = crypto.randomUUID();
-
-					// reconnect
-					connect();
-
-					break;
-				case 'UpdateHand':
-					cards = msg.data.cards;
-					break;
-				case 'Error':
-					show_error(msg.data);
-			}
+			handleIncommingEvent(msg);
 		};
 
-		ws.onclose = disconnect;
+		connection.ws.onclose = disconnect;
+	}
+
+	function handleIncommingEvent(msg: api.IncommingEvent) {
+		switch (msg.type) {
+			case 'PlayerJoin':
+				return onPlayerJoin(msg);
+			case 'PlayerRemove':
+				return onPlayerRemove(msg);
+			case 'AssignHost':
+				return onAssignHost(msg);
+			case 'StartRound':
+				return onStartRound(msg);
+			case 'CardsSubmitted':
+				return onCardsSubmitted(msg);
+			case 'UpdateDecks':
+				return onUpdateDecks(msg);
+			case 'UpdateSettings':
+				return onUpdateSettings(msg);
+			case 'RevealCards':
+				return onRevealCards(msg);
+			case 'RoundSkip':
+				return onRoundSkip();
+			case 'RoundResult':
+				return onRoundResult(msg);
+			case 'GameOver':
+				return onGameOver();
+			case 'LobbyReset':
+				return onLobbyReset();
+			case 'LobbyState':
+				return onLobbyState(msg);
+			case 'UpdateHand':
+				return onUpdateHand(msg);
+			case 'Timeout':
+				return onTimeout();
+			case 'Kick':
+				return onKick();
+			case 'Error':
+				return onError(msg);
+		}
+	}
+
+	function onPlayerJoin(msg: Extract<api.IncommingEvent, { type: 'PlayerJoin' }>) {
+		if (!lobby.state) return;
+
+		let joined_id = msg.data.player_id;
+		let joined_info = msg.data.player_info;
+		lobby.state.players[joined_id] = joined_info;
+	}
+
+	function onPlayerRemove(msg: Extract<api.IncommingEvent, { type: 'PlayerRemove' }>) {
+		if (!lobby.state) return;
+
+		let kicked_id = msg.data.player_id;
+		delete lobby.state.players[kicked_id];
+
+		if (isGaming) {
+			toaster.error({
+				title: 'Game Interrupted',
+				description: 'A player left the lobby during the game, so it could not continue.'
+			});
+		}
+	}
+
+	function onAssignHost(msg: Extract<api.IncommingEvent, { type: 'AssignHost' }>) {
+		if (!lobby.state) return;
+
+		let host_id = msg.data.player_id;
+		let new_host = lobby.state.players[host_id];
+		new_host.is_host = true;
+		if (host_id === own.id) {
+			toaster.warning({
+				title: 'You Are Now the Host',
+				description:
+					'The previous host has left the lobby, so you have been assigned as the new host.'
+			});
+		}
+	}
+
+	function onStartRound(msg: Extract<api.IncommingEvent, { type: 'StartRound' }>) {
+		if (!lobby.state) return;
+
+		set_phase('Submitting');
+		round.count += 1;
+
+		resetRound();
+
+		let czar_id = msg.data.czar_id;
+		let czar = lobby.state.players[czar_id];
+		if (czar) {
+			czar.is_czar = true;
+			if (czar_id == own.id) {
+				toaster.info({ title: `You are the Czar!` });
+			} else {
+				toaster.info({ title: `${czar.name} is the Czar!` });
+			}
+		}
+
+		round.black_card = msg.data.black_card;
+	}
+
+	function onCardsSubmitted(msg: Extract<api.IncommingEvent, { type: 'CardsSubmitted' }>) {
+		if (!lobby.state || !round.black_card) return;
+
+		let id = msg.data.player_id;
+		let player_submit = lobby.state.players[id];
+		let placeholders = [];
+		for (let i = 0; i < round.black_card.fields; i++) {
+			if (id === own.id) {
+				placeholders.push({ text: 'Your Card' });
+			} else {
+				placeholders.push({ text: `Card by ${player_submit.name}` });
+			}
+		}
+		round.revealed_cards.push(placeholders);
+	}
+
+	function onUpdateDecks(msg: Extract<api.IncommingEvent, { type: 'UpdateDecks' }>) {
+		if (!lobby.state) return;
+		lobby.state.settings.decks = msg.data.decks;
+	}
+
+	function onUpdateSettings(msg: Extract<api.IncommingEvent, { type: 'UpdateSettings' }>) {
+		if (!lobby.state) return;
+		lobby.state.settings = msg.data.settings;
+	}
+
+	function onRevealCards(msg: Extract<api.IncommingEvent, { type: 'RevealCards' }>) {
+		set_phase('Judging');
+		round.revealed_cards = msg.data.selected_cards;
+	}
+
+	function onRoundSkip() {
+		set_phase('RoundFinished');
+		toaster.info({
+			title: 'Skipped',
+			description:
+				'The current round was skipped due to the players or the Czar not selecting any cards.'
+		});
+	}
+
+	function onRoundResult(msg: Extract<api.IncommingEvent, { type: 'RoundResult' }>) {
+		if (!lobby.state) return;
+
+		set_phase('RoundFinished');
+		round.result = msg.data;
+
+		let winner = lobby.state.players[round.result.player_id];
+		winner.points += 1;
+		if (round.result.player_id == own.id) {
+			toaster.info({ title: `You are the winner of this round!` });
+		} else {
+			toaster.info({ title: `${winner.name} is the winner of this round!` });
+		}
+	}
+
+	function onGameOver() {
+		set_phase('GameOver');
+	}
+
+	function onLobbyReset() {
+		if (!lobby.state) return;
+
+		set_phase('LobbyOpen');
+		for (const [_, player] of sortedEntries(lobby.state.players)) {
+			player.points = 0;
+		}
+		round.count = 0;
+	}
+
+	function onLobbyState(msg: Extract<api.IncommingEvent, { type: 'LobbyState' }>) {
+		lobby.state = msg.data;
+	}
+
+	function onUpdateHand(msg: Extract<api.IncommingEvent, { type: 'UpdateHand' }>) {
+		own.cards = msg.data.cards;
+	}
+
+	function onTimeout() {
+		toaster.warning({
+			title: 'Timed Out',
+			description: 'You have been removed from the lobby due to inactivity. Reload to reconnect!'
+		});
+
+		// Clear state directly to improve ux
+		disconnect();
+	}
+
+	function onKick() {
+		toaster.warning({
+			title: 'Kicked',
+			description: 'You have been removed from the lobby by the host.'
+		});
+
+		// Clear state directly to improve ux
+		disconnect();
+
+		// Close ws
+		connection.ws?.close();
+
+		// Remove remembered credentials
+		resetLogin();
+
+		// reconnect
+		connect();
+	}
+
+	function onError(msg: Extract<api.IncommingEvent, { type: 'Error' }>) {
+		show_error(msg.data);
+	}
+
+	function resetRound() {
+		own.selected_cards = [];
+		round.black_card = undefined;
+		round.revealed_cards = [];
+		round.result = undefined;
+		for (const [_, player] of sortedEntries(lobby.state?.players)) {
+			player.is_czar = false;
+		}
+	}
+
+	function resetLogin() {
+		own.name = '';
+		own.id = crypto.randomUUID();
+		own.logged_in = false;
+		$credentials = null;
 	}
 
 	function disconnect() {
-		lobby_state = undefined;
-		connected = false;
+		lobby.state = undefined;
+		connection.connected = false;
 	}
 
 	function join_lobby() {
-		// make sure to reconnect if a error closed the connection, like when trying to join a full or closed lobby
-		if (!connected) connect();
-		api.send_ws(ws!, { type: 'JoinLobby', data: { name: own_name, id: own_id } });
-		$own = { lobby_id: lobby_id as api.Uuid, id: own_id, name: own_name };
+		// Make sure to reconnect if an error closed the connection
+		// Like when trying to join a full or closed lobby
+		if (!connection.connected) connect();
+		// Connect and update credentials
+		api.send_ws(connection.ws!, { type: 'JoinLobby', data: { name: own.name, id: own.id } });
+		$credentials = { lobby_id: lobby.id as api.Uuid, id: own.id, name: own.name };
 	}
 
 	function set_phase(phase: api.GamePhase) {
-		if (lobby_state) lobby_state.phase = phase;
+		if (!lobby.state) return;
+		lobby.state.phase = phase;
 
 		let change: number | undefined;
-		if (phase == 'RoundFinished') change = lobby_state?.settings.wait_time_secs;
-		if (phase == 'Submitting') change = lobby_state?.settings.max_submitting_time_secs;
-		if (phase == 'Judging') change = lobby_state?.settings.max_judging_time_secs;
-
-		time = { self: change };
+		if (phase == 'RoundFinished') change = lobby.state.settings.wait_time_secs;
+		if (phase == 'Submitting') change = lobby.state.settings.max_submitting_time_secs;
+		if (phase == 'Judging') change = lobby.state.settings.max_judging_time_secs;
+		round.time = { self: change };
 	}
 </script>
 
@@ -292,35 +399,20 @@
 />
 
 {#if isJoining}
-	<Joining bind:own_name {join_lobby} />
+	<Joining bind:own_name={own.name} {join_lobby} />
 {:else if isOpen}
-	<LobbyOpen {ws} {lobby_state} {lobby_id} {own_id} />
+	<LobbyOpen {connection} {lobby} {own} />
 {:else if isGaming}
-	{@const isCzar = lobby_state?.players[own_id]?.is_czar || false}
+	{@const isCzar = lobby.state?.players[own.id]?.is_czar || false}
 	<div class="mx-auto flex max-w-7xl flex-col items-center space-y-6 px-4 py-8">
-		<TopBar {lobby_state} {own_id} {round} winner={round_result?.player_id} {time} />
+		<TopBar {lobby} {own} {round} />
 
-		{#if black_card}
-			<BlackCard
-				{ws}
-				selectable={isCzar && isJudging}
-				{black_card}
-				{revealed_cards}
-				selectedIndex={round_result?.winning_card_index}
-			/>
+		<Board {connection} {round} selectable={isCzar && isJudging} />
 
-			<Hand
-				{ws}
-				{black_card}
-				bind:selectedIndexes={self_selected_cards}
-				selectable={!isCzar && isSubmitting}
-				disabled={isCzar}
-				{cards}
-			/>
-		{/if}
+		<Hand {connection} {round} bind:own selectable={!isCzar && isSubmitting} disabled={isCzar} />
 	</div>
 {:else if isOver}
-	<GameOver {ws} {lobby_state} {own_id} />
+	<GameOver {connection} {lobby} {own} />
 {:else}
 	<div class="mx-auto flex max-w-3xl flex-col items-center space-y-6 px-4 py-8">
 		<p>Loading...</p>

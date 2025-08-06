@@ -3,17 +3,18 @@
 	import api from '$lib/api';
 	import { sortedEntries } from '$lib/utils';
 	import { Crown, Trophy } from 'lucide-svelte';
+	import type { Connection, Lobby, Own } from './+page.svelte';
 
 	interface Props {
-		ws: WebSocket | undefined;
-		lobby_state: api.LobbyState | undefined;
-		own_id: api.Uuid;
+		connection: Connection;
+		lobby: Lobby;
+		own: Own;
 	}
 
-	let { ws, lobby_state, own_id }: Props = $props();
+	let { connection, lobby, own }: Props = $props();
 
 	function reset_game() {
-		api.send_ws(ws!, { type: 'RestartRound' });
+		api.send_ws(connection.ws!, { type: 'RestartRound' });
 	}
 
 	// Fire confetti when component mounts
@@ -27,11 +28,11 @@
 
 	// Top three players for podium
 	const topThree = () =>
-		sortedEntries(lobby_state?.players)
+		sortedEntries(lobby.state?.players)
 			.toSorted((a, b) => b[1].points - a[1].points)
 			.slice(0, 3);
 	const others = () =>
-		sortedEntries(lobby_state?.players)
+		sortedEntries(lobby.state?.players)
 			.toSorted((a, b) => b[1].points - a[1].points)
 			.slice(3);
 </script>
@@ -51,7 +52,7 @@
 							: idx === 1
 								? 'bg-gradient-to-br from-gray-300 to-gray-500 text-gray-900'
 								: 'bg-gradient-to-br from-amber-600 to-orange-800 text-white'} flex w-20 flex-col items-center justify-center space-y-1 rounded-t-2xl py-4 shadow-lg sm:w-32 {id ===
-						own_id
+						own.id
 							? 'outline-secondary-500 outline-2 outline-offset-2'
 							: ''}"
 						style="height: {idx === 0 ? '200px' : idx === 1 ? '160px' : '140px'}"
@@ -82,7 +83,7 @@
 			{#each others() as [id, player]}
 				<div
 					class="preset-filled grid w-full grid-cols-[1fr_auto] rounded-lg px-5 py-3 shadow-md
-					{id === own_id ? 'outline-secondary-500 outline-2 outline-offset-2' : ''}"
+					{id === own.id ? 'outline-secondary-500 outline-2 outline-offset-2' : ''}"
 				>
 					<div class="flex w-full max-w-full min-w-0 flex-1 items-center justify-start space-x-1.5">
 						<div class="w-4">
@@ -98,7 +99,7 @@
 		</div>
 	{/if}
 
-	{#if lobby_state?.players[own_id]?.is_host}
+	{#if lobby.state?.players[own.id]?.is_host}
 		<button class="btn preset-filled-primary-500" onclick={reset_game}> Restart Game </button>
 	{/if}
 </div>

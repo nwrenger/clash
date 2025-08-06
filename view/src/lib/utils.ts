@@ -1,4 +1,5 @@
 import { dev } from '$app/environment';
+import type api from './api';
 
 export const API_BASE = dev ? 'https://localhost:8080' : 'https://api.clash.nwrenger.dev';
 
@@ -51,7 +52,9 @@ export function areObjectsEqual(obj1: any, obj2: any): boolean {
 }
 
 /** Making records into sorted arrays by their key */
-export function sortedEntries<K extends string, V>(rec: Record<K, V> | undefined): [K, V][] {
+export function sortedEntries<K extends string, V extends api.PlayerInfo>(
+	rec: Record<K, V> | undefined
+): [K, V][] {
 	let arr = Object.entries(rec as any) as [K, V][];
-	return arr.sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
+	return arr.sort(([_keyA, valA], [_keyB, valB]) => valA.name.localeCompare(valA.name));
 }

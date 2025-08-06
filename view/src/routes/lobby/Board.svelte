@@ -1,24 +1,27 @@
 <script lang="ts">
 	import api from '$lib/api';
 	import Card from '$lib/components/Card.svelte';
+	import type { Connection, Round } from './+page.svelte';
 
 	interface Props {
-		ws: WebSocket | undefined;
-		selectable?: boolean;
-		black_card: api.BlackCard;
-		revealed_cards: api.WhiteCard[][];
-		selectedIndex?: number;
+		connection: Connection;
+		round: Round;
+		selectable: boolean;
 	}
+
+	let { connection, round, selectable }: Props = $props();
 
 	let innerHeight = $state(0);
 	let smol = $derived(innerHeight < 800);
-
-	let { ws, selectable, black_card, revealed_cards, selectedIndex = undefined }: Props = $props();
+	let selectedIndex = $state(round.result?.winning_card_index);
+	$effect(() => {
+		selectedIndex = round.result?.winning_card_index;
+	});
 
 	function selectCards(index: number) {
-		if (selectable && selectedIndex === undefined) {
+		if (selectable && selectedIndex == undefined) {
 			selectedIndex = index;
-			api.send_ws(ws!, { type: 'CzarPick', data: { index } });
+			api.send_ws(connection.ws!, { type: 'CzarPick', data: { index } });
 		}
 	}
 </script>
@@ -48,15 +51,17 @@
 {/if}
 
 {#snippet BlackCard()}
-	<Card
-		card={black_card}
-		card_classes="bg-surface-950 shadow-xl hover:-translate-y-2 hover:scale-110 hover:-rotate-2"
-		text_classes="text-surface-50"
-	/>
+	{#if round.black_card}
+		<Card
+			card={round.black_card}
+			card_classes="bg-surface-950 shadow-xl hover:-translate-y-2 hover:scale-110 hover:-rotate-2"
+			text_classes="text-surface-50"
+		/>
+	{/if}
 {/snippet}
 
 {#snippet RevealedCards()}
-	{#each revealed_cards as pair, i}
+	{#each round.revealed_cards as pair, i}
 		<div class="group flex flex-shrink-0 cursor-pointer items-center">
 			{#each pair as card}
 				<Card

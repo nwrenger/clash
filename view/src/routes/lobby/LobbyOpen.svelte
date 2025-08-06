@@ -6,54 +6,53 @@
 	import { Tabs } from '@skeletonlabs/skeleton-svelte';
 	import { Crown, Eye, EyeOff, Play, Settings2 } from 'lucide-svelte';
 	import AddDeck from './AddDeck.svelte';
+	import type { Connection, Lobby, Own } from './+page.svelte';
 
 	interface Props {
-		ws: WebSocket | undefined;
-		lobby_state: api.LobbyState | undefined;
-		lobby_id: string;
-		own_id: api.Uuid;
+		connection: Connection;
+		lobby: Lobby;
+		own: Own;
 	}
 
 	let tabs = $state('lobby');
 	let hide_url = $state(true);
 	let changable_settings: api.Settings | undefined = $state();
 	$effect(() => {
-		changable_settings = deepClone(lobby_state?.settings);
+		changable_settings = deepClone(lobby.state?.settings);
 	});
 
-	let { ws, lobby_state, lobby_id, own_id }: Props = $props();
+	let { connection, lobby, own }: Props = $props();
 
-	let isHost = $derived(lobby_state?.players[own_id]?.is_host || false);
-	let lobbyUrl = $derived(`${page.url.origin}/lobby?id=${lobby_id}`);
+	let isHost = $derived(lobby.state?.players[own.id]?.is_host || false);
+	let lobbyUrl = $derived(`${page.url.origin}/lobby?id=${lobby.id}`);
 	let applyable = $derived(
-		!areObjectsEqual(changable_settings, lobby_state?.settings) &&
-			changable_settings?.max_players != undefined
+		!areObjectsEqual(changable_settings, lobby.state?.settings) && changable_settings?.max_players
 	);
 
 	function handleMaxPlayers(e: Event) {
 		let target = e.target as HTMLInputElement;
-		const val = parseInt(target.value, 10);
-		// Check for integer and >= 1
-		if (changable_settings) {
-			if (Number.isInteger(val) && val >= 1) {
-				changable_settings.max_players = val;
-			} else {
-				changable_settings.max_players = undefined as any;
-			}
-		}
+		// Only allow integers and remove leading zeros
+		let digits: string = target.value.replace(/[^0-9]/g, '').replace(/^0+/, '');
+		// update value and display
+		if (changable_settings) changable_settings.max_players = parseInt(digits) || (undefined as any);
+		target.value = digits;
 	}
 
-	function kick(own_id: api.Uuid, player_id: api.Uuid) {
-		if (own_id != player_id) api.send_ws(ws!, { type: 'Kick', data: { kicked: player_id } });
+	function kick(player_id: api.Uuid) {
+		if (own.id != player_id)
+			api.send_ws(connection.ws!, { type: 'Kick', data: { kicked: player_id } });
 	}
 
 	function update_settings() {
 		if (changable_settings)
-			api.send_ws(ws!, { type: 'UpdateSettings', data: { settings: changable_settings } });
+			api.send_ws(connection.ws!, {
+				type: 'UpdateSettings',
+				data: { settings: changable_settings }
+			});
 	}
 
 	function start_game() {
-		api.send_ws(ws!, { type: 'StartRound' });
+		api.send_ws(connection.ws!, { type: 'StartRound' });
 	}
 </script>
 
@@ -112,16 +111,16 @@
 				</div>
 				<hr class="hr" />
 				<div class="mx-auto flex w-full max-w-(--breakpoint-xl) flex-wrap justify-center gap-2">
-					{#each sortedEntries(lobby_state?.players) as [id, player]}
+					{#each sortedEntries(lobby.state?.players) as [id, player]}
 						{#if isHost}
 							<button
-								class="card relative {id === own_id
+								class="card relative {id === own.id
 									? 'preset-filled-tertiary-500'
-									: 'preset-filled'} {id !== own_id
+									: 'preset-filled'} {id !== own.id
 									? 'hover:preset-filled-error-500'
 									: 'pointer-events-none'} px-4 py-2 transition-colors"
 								title="Kick Player?"
-								onclick={() => kick(own_id, id)}
+								onclick={() => kick(id)}
 							>
 								<span class="flex h-full w-full items-center justify-center">
 									<span class="flex items-center space-x-1.5">
@@ -134,7 +133,7 @@
 							</button>
 						{:else}
 							<button
-								class="card relative {id === own_id
+								class="card relative {id === own.id
 									? 'preset-filled-tertiary-500'
 									: 'preset-filled'} pointer-events-none px-4 py-2"
 							>
@@ -189,7 +188,7 @@
 							</div>
 
 							{#if isHost}
-								<AddDeck {ws} />
+								<AddDeck {connection} />
 							{/if}
 						</div>
 						<div class="grid w-full grid-cols-2 gap-1.5">
@@ -212,12 +211,12 @@
 
 								<input
 									class="input"
-									type="number"
-									min={1}
-									step={1}
+									type="text"
+									inputmode="numeric"
+									autocomplete="off"
 									placeholder="Input max players..."
-									value={changable_settings.max_players || ''}
 									oninput={handleMaxPlayers}
+									value={changable_settings.max_players}
 									disabled={!isHost}
 								/>
 							</label>
@@ -275,7 +274,7 @@
 							<button
 								class="btn preset-filled-error-500"
 								disabled={!applyable}
-								onclick={() => (changable_settings = deepClone(lobby_state?.settings))}
+								onclick={() => (changable_settings = deepClone(lobby.state?.settings))}
 								>Reset</button
 							>
 							<button

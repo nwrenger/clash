@@ -1,37 +1,37 @@
 <script lang="ts">
 	import api from '$lib/api';
 	import Card from '$lib/components/Card.svelte';
+	import type { Connection, Own, Round } from './+page.svelte';
 
 	interface Props {
-		ws: WebSocket | undefined;
-		selectedIndexes: number[];
-		black_card: api.BlackCard;
-		selectable?: boolean;
-		cards: api.WhiteCard[];
-		disabled?: boolean;
+		connection: Connection;
+		round: Round;
+		own: Own;
+		selectable: boolean;
+		disabled: boolean;
 	}
 
-	let {
-		ws,
-		selectedIndexes = $bindable(),
-		black_card,
-		selectable,
-		cards,
-		disabled
-	}: Props = $props();
+	let { connection, round, own = $bindable(), selectable, disabled }: Props = $props();
+	let localSelectable = $state(selectable);
+	$effect(() => {
+		localSelectable = selectable;
+	});
 
 	function hasIndex(index: number) {
-		return selectedIndexes.find((p) => p === index) != undefined;
+		return own.selected_cards.find((p) => p === index) != undefined;
 	}
 
 	function selectCard(index: number) {
-		if (selectable) {
-			if (selectedIndexes.length < black_card.fields && !hasIndex(index)) {
-				selectedIndexes.push(index);
+		if (localSelectable && round.black_card) {
+			if (own.selected_cards.length < round.black_card.fields && !hasIndex(index)) {
+				own.selected_cards.push(index);
 			}
-			if (selectedIndexes.length == black_card.fields) {
-				api.send_ws(ws!, { type: 'SubmitOwnCards', data: { indexes: selectedIndexes } });
-				selectable = false;
+			if (own.selected_cards.length == round.black_card.fields) {
+				api.send_ws(connection.ws!, {
+					type: 'SubmitOwnCards',
+					data: { indexes: own.selected_cards }
+				});
+				localSelectable = false;
 			}
 		}
 	}
@@ -43,7 +43,7 @@
 >
 	<div class="flex h-full w-full items-center justify-center">
 		<div class="flex items-center space-x-4 overflow-x-auto px-4 pt-9 pb-2 perspective-distant">
-			{#each cards as card, index}
+			{#each own.cards as card, index}
 				<Card
 					{card}
 					card_classes="{hasIndex(index)

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import api from '$lib/api';
-	import { own } from '$lib/state';
+	import { credentials } from '$lib/state';
 	import { handle_promise } from '$lib/toaster';
 	import { LoaderCircle, Plus } from 'lucide-svelte';
 
@@ -13,7 +13,7 @@
 		try {
 			const id: api.Uuid = crypto.randomUUID();
 			const data = await handle_promise(api.create_lobby(name, id));
-			$own = { lobby_id: data.id, id, name };
+			$credentials = { lobby_id: data.id, id, name };
 			await goto(`/lobby?id=${data.id}`);
 		} finally {
 			creating = false;
