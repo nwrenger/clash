@@ -35,9 +35,7 @@
 				{@render BlackCard()}
 			</div>
 
-			<div class="pt-6">
-				{@render RevealedCards()}
-			</div>
+			{@render RevealedCards('pt-6')}
 		</div>
 	</div>
 {:else}
@@ -60,9 +58,9 @@
 	{/if}
 {/snippet}
 
-{#snippet RevealedCards()}
+{#snippet RevealedCards(classes?: string)}
 	{#each round.revealed_cards as pair, i}
-		<div class="group flex flex-shrink-0 cursor-pointer items-center">
+		<div class="group flex flex-shrink-0 cursor-pointer items-center {classes}">
 			{#each pair as card}
 				<Card
 					{card}
