@@ -3,8 +3,8 @@
 	import api from '$lib/api';
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import { areObjectsEqual, deepClone, sortedEntries } from '$lib/utils';
-	import { Tabs } from '@skeletonlabs/skeleton-svelte';
-	import { Crown, Eye, EyeOff, LoaderCircle, Play, Settings2 } from 'lucide-svelte';
+	import { Tabs, Tooltip } from '@skeletonlabs/skeleton-svelte';
+	import { Crown, Download, Eye, EyeOff, LoaderCircle, Play, Settings2 } from 'lucide-svelte';
 	import AddDeck from './AddDeck.svelte';
 	import type { Connection, Lobby, Own } from './+page.svelte';
 
@@ -34,6 +34,7 @@
 	let changes = $derived(
 		!areObjectsEqual(changable_settings, lobby.state?.settings) && !!changable_settings?.max_players
 	);
+	let saving = $derived(changes || updating_decks);
 
 	$effect(() => {
 		if (lobby.state?.settings.decks) updating_decks = false;
@@ -221,10 +222,32 @@
 				{#if isHost}
 					<hr class="hr" />
 					<div class="flex w-full items-center justify-center space-x-2">
-						<button
-							class="btn preset-filled-primary-500 flex w-full items-center justify-center sm:w-auto"
-							onclick={start_game}>Start Game</button
+						<Tooltip
+							open={saving}
+							positioning={{ placement: 'bottom' }}
+							triggerBase=""
+							contentBase="card preset-filled-warning-500 p-4 max-w-[calc(100vw-80px)] text-center"
+							openDelay={200}
+							closeDelay={200}
+							arrowBackground="var(--color-warning-500)"
+							arrow
 						>
+							{#snippet trigger()}
+								<button
+									class="btn preset-filled-primary-500 flex w-full items-center justify-center sm:w-auto"
+									onclick={start_game}
+									disabled={saving}
+								>
+									Start Game
+								</button>
+							{/snippet}
+							{#snippet content()}
+								<span class="flex items-center gap-2">
+									<LoaderCircle class="animate-spin" size={18} />
+									<span>Saving settings. Please wait...</span>
+								</span>
+							{/snippet}
+						</Tooltip>
 					</div>
 				{/if}
 			</Tabs.Panel>
@@ -266,7 +289,7 @@
 											class="preset-filled-primary-500 btn"
 											title="Update Decks"
 											onclick={get_decks}
-											disabled={updating_decks || changes}
+											disabled={saving}
 										>
 											{#if updating_decks}
 												<LoaderCircle class="animate-spin" />
@@ -275,7 +298,7 @@
 												Update All
 											{/if}
 										</button>
-										<AddDeck {connection} disabled={changes || updating_decks} />
+										<AddDeck {connection} disabled={saving} />
 									</div>
 								</div>
 							{/if}
@@ -360,6 +383,11 @@
 							<div class="text-primary-500 flex items-center gap-1 text-xs">
 								<LoaderCircle class="animate-spin" size={16} />
 								Applying in {(autoSaveRemaining / 1000).toFixed(1)}s...
+							</div>
+						{:else if changes}
+							<div class="text-primary-500 flex items-center gap-1 text-xs">
+								<Download size={16} />
+								Saving...
 							</div>
 						{/if}
 					</div>
