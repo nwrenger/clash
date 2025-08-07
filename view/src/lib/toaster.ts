@@ -1,4 +1,4 @@
-import api from './api';
+import type api from './api';
 import { createToaster } from '@skeletonlabs/skeleton-svelte';
 export const toaster = createToaster({ placement: 'bottom-end' });
 
