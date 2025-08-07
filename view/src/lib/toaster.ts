@@ -1,23 +1,45 @@
-import type api from './api';
+import api from './api';
 import { createToaster } from '@skeletonlabs/skeleton-svelte';
 export const toaster = createToaster({ placement: 'bottom-end' });
 
-/** Gets `T` of `api.Result<T>` if no error occurred otherwise displays the error via a toast and throws the error */
-export async function handle_promise<T>(
-	promise: Promise<T>,
-	on_error?: () => void
-): Promise<T> | never {
+/** Gets `T` of `Promise<T>` if no error occurred otherwise displays the error via a toast and throws the error */
+export async function handle_promise<T>(promise: Promise<T>): Promise<T> | never {
+	let result;
 	try {
-		return await promise;
+		result = await promise;
 	} catch (e: unknown) {
 		let error = e as api.Error;
-
-		error_toast(error_msg(error));
-
-		if (on_error) on_error();
-
-		throw error.kind;
+		return show_error(error);
 	}
+
+	if (is_error(result)) {
+		return show_error(result);
+	} else {
+		return result;
+	}
+}
+
+/** Check if the `api.Result` is an `api.Error` */
+function is_error(result: any): result is api.Error {
+	if (typeof result !== 'object' || result === null) return false;
+	// List all error kinds
+	const errorKinds = [
+		'LobbyLogin',
+		'LobbyClosed',
+		'LobbyFull',
+		'LobbyStart',
+		'LobbyNotFound',
+		'CardSubmission',
+		'CzarChoice',
+		'Unauthorized',
+		'Deck',
+		'Reqwest',
+		'FileSystem',
+		'Json'
+	];
+
+	// Check that result.kind matches an error kind
+	return typeof result.kind === 'string' && errorKinds.includes(result.kind);
 }
 
 /** Displays the error via a toast and throws it */

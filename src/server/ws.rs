@@ -110,14 +110,15 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
                         ClientEvent::AddDeck { deckcode } => {
                             lobby.add_deck(&player_id, deckcode).await
                         }
-                        ClientEvent::StartRound => lobby.start_game(&player_id).await,
+                        ClientEvent::GetDecks => lobby.get_decks(&player_id).await,
                         ClientEvent::Kick { kicked } => lobby.kick(&player_id, &kicked).await,
-                        ClientEvent::CzarPick { index } => {
-                            lobby.submit_czar_choice(&player_id, index).await
-                        }
+                        ClientEvent::StartRound => lobby.start_game(&player_id).await,
                         ClientEvent::RestartRound => lobby.reset_game(&player_id).await,
                         ClientEvent::SubmitOwnCards { indexes } => {
                             lobby.submit_cards(&player_id, indexes).await
+                        }
+                        ClientEvent::CzarPick { index } => {
+                            lobby.submit_czar_choice(&player_id, index).await
                         }
                     }
                 } {

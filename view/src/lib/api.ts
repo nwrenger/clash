@@ -90,6 +90,7 @@ namespace api {
 		| { type: 'JoinLobby'; data: { name: string; id: Uuid } }
 		| { type: 'UpdateSettings'; data: { settings: Settings } }
 		| { type: 'AddDeck'; data: { deckcode: String } }
+		| { type: 'GetDecks' }
 		| { type: 'Kick'; data: { kicked: Uuid } }
 		| { type: 'StartRound' }
 		| { type: 'RestartRound' }

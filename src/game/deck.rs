@@ -1,14 +1,18 @@
-use std::path::PathBuf;
+use std::{path::PathBuf, time::SystemTime};
 
 use crate::{
     error::{Error, Result},
     game::Settings,
+    MAX_AGE,
 };
 use rand::{rng, seq::IteratorRandom};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use tokio::{fs, io::AsyncWriteExt};
+use tokio::{
+    fs::{self, metadata},
+    io::AsyncWriteExt,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DeckInfo {
@@ -38,6 +42,19 @@ impl Deck {
         let data = fs::read_to_string(&path).await?;
         let deck = serde_json::from_str(&data)?;
         Ok(deck)
+    }
+
+    /// Checks if a cached file is older than `MAX_AGE`
+    async fn needs_update(path: &PathBuf) -> Result<bool> {
+        let meta = metadata(path).await?;
+        let modified = meta.modified()?;
+        let now = SystemTime::now();
+
+        if let Ok(elapsed) = now.duration_since(modified) {
+            Ok(elapsed > MAX_AGE)
+        } else {
+            Ok(true)
+        }
     }
 
     /// Save a deck to disk cache.
@@ -98,13 +115,22 @@ impl Deck {
     /// List all downloaded decks by code, loading them from disk
     pub async fn get_all_cached(cache: PathBuf) -> Result<Vec<Self>> {
         let mut decks = Vec::new();
+
         if cache.exists() {
-            let mut rd = fs::read_dir(cache).await?;
-            while let Some(entry) = rd.next_entry().await? {
+            let mut entries = fs::read_dir(cache.clone()).await?;
+            while let Some(entry) = entries.next_entry().await? {
                 let path = entry.path();
+
                 if path.extension().and_then(|e| e.to_str()) == Some("json") {
                     if let Ok(data) = fs::read_to_string(&path).await {
-                        if let Ok(deck) = serde_json::from_str::<Self>(&data) {
+                        if let Ok(mut deck) = serde_json::from_str::<Self>(&data) {
+                            if Deck::needs_update(&path).await? {
+                                if let Ok(fetched) = Deck::fetch(&deck.deckcode).await {
+                                    fetched.save(cache.clone()).await?;
+                                    // Update already read deck
+                                    deck = fetched;
+                                }
+                            }
                             decks.push(deck);
                         }
                     }

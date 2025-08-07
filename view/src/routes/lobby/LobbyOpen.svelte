@@ -51,6 +51,10 @@
 			api.send_ws(connection.ws!, { type: 'Kick', data: { kicked: player_id } });
 	}
 
+	function get_decks() {
+		api.send_ws(connection.ws!, { type: 'GetDecks' });
+	}
+
 	function update_settings() {
 		if (changable_settings)
 			api.send_ws(connection.ws!, {
@@ -173,7 +177,7 @@
 					<div class="space-y-3">
 						<div class="w-full space-y-2">
 							<div class="label">
-								<span class="label-text">Card Sets</span>
+								<span class="label-text">Decks</span>
 								{#each changable_settings.decks as deck}
 									<label class="flex items-center space-x-2">
 										<input
@@ -196,7 +200,17 @@
 							</div>
 
 							{#if isHost}
-								<AddDeck {connection} />
+								<div class="label">
+									<span class="label-text">Manage Decks</span>
+									<div class="grid gap-1.5 sm:grid-cols-2">
+										<button
+											class="preset-filled-primary-500 btn"
+											title="Update Decks"
+											onclick={get_decks}>Update</button
+										>
+										<AddDeck {connection} />
+									</div>
+								</div>
 							{/if}
 						</div>
 						<div class="grid w-full grid-cols-2 gap-1.5">

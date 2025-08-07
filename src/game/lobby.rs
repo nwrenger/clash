@@ -362,28 +362,40 @@ impl Lobby {
             let fetched = Deck::fetch(&deckcode).await?;
             fetched.save(self.cache.clone()).await?;
 
-            let settings = {
-                let guard = self.state.read().await;
-                guard.settings.clone()
-            };
-
-            let decks: Vec<DeckInfo> =
-                Deck::get_all_cached_info(self.cache.to_owned(), Some(settings.decks)).await?;
-
-            // update settings
-            {
-                let mut guard = self.state.write().await;
-                guard.settings.decks = decks.clone();
-            }
-
-            // send update
-            self.touch().await;
-            self.emit_global(ServerEvent::UpdateDecks { decks });
-
-            Ok(())
+            self.update_decks().await
         } else {
             Err(Error::Unauthorized)
         }
+    }
+
+    pub async fn get_decks(&self, player_id: &Uuid) -> Result<()> {
+        if self.is_host(player_id).await && self.has_phase(GamePhase::LobbyOpen).await {
+            self.update_decks().await
+        } else {
+            Err(Error::Unauthorized)
+        }
+    }
+
+    async fn update_decks(&self) -> Result<()> {
+        let settings = {
+            let guard = self.state.read().await;
+            guard.settings.clone()
+        };
+
+        let decks: Vec<DeckInfo> =
+            Deck::get_all_cached_info(self.cache.to_owned(), Some(settings.decks)).await?;
+
+        // update settings
+        {
+            let mut guard = self.state.write().await;
+            guard.settings.decks = decks.clone();
+        }
+
+        // send update
+        self.touch().await;
+        self.emit_global(ServerEvent::UpdateDecks { decks });
+
+        Ok(())
     }
 
     /// Assigns the task handle to the game task

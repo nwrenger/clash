@@ -242,7 +242,9 @@
 
 	function onUpdateDecks(msg: Extract<api.IncommingEvent, { type: 'UpdateDecks' }>) {
 		if (!lobby.state) return;
+
 		lobby.state.settings.decks = msg.data.decks;
+		toaster.info({ title: 'Decks Updated' });
 	}
 
 	function onUpdateSettings(msg: Extract<api.IncommingEvent, { type: 'UpdateSettings' }>) {

@@ -24,6 +24,8 @@ pub enum ClientEvent {
     UpdateSettings { settings: Settings },
     /// Add a deck (only host allowed)
     AddDeck { deckcode: String },
+    /// Gets all current decks, use for a force update (only host allowed)
+    GetDecks,
     /// Clients kicks a player (usually the host)
     Kick { kicked: Uuid },
     /// Client starts a new round (usually the host)

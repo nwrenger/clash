@@ -27,14 +27,12 @@
 <Modal
 	open={openState}
 	onOpenChange={(e) => (openState = e.open)}
-	triggerBase="sm:w-auto w-full"
+	triggerBase="w-full"
 	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet trigger()}
-		<button class="btn preset-filled-primary-500 flex w-full sm:w-auto" title="Add Deck">
-			Add Deck
-		</button>
+		<button class="btn preset-filled-primary-500 w-full" title="Add a Deck"> Add </button>
 	{/snippet}
 	{#snippet content()}
 		<header class="flex justify-between">
