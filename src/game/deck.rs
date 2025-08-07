@@ -1,24 +1,24 @@
-use std::{path::PathBuf, time::SystemTime};
+use std::{
+    path::{Path, PathBuf},
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::{
     error::{Error, Result},
     game::Settings,
-    MAX_AGE,
 };
 use rand::{rng, seq::IteratorRandom};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json;
-use tokio::{
-    fs::{self, metadata},
-    io::AsyncWriteExt,
-};
+use tokio::{fs, io::AsyncWriteExt};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DeckInfo {
     pub name: String,
     pub deckcode: String,
     pub enabled: bool,
+    pub fetched_at: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -27,38 +27,39 @@ pub struct Deck {
     pub deckcode: String,
     pub blacks: Vec<BlackCard>,
     pub whites: Vec<WhiteCard>,
+    #[serde(default = "empty_timestamp")]
+    pub fetched_at: u64,
+}
+
+fn now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs()
+}
+
+const fn empty_timestamp() -> u64 {
+    0
 }
 
 impl Deck {
     /// Where to store cached decks
-    fn cache_file_path(mut cache: PathBuf, code: &str) -> PathBuf {
+    fn cache_file_path(cache: &Path, code: &str) -> PathBuf {
+        let mut cache = cache.to_path_buf();
         cache.push(format!("{}.json", code));
         cache
     }
 
     /// Try load a cached deck from disk. Maybe useful sometime.
-    async fn load_cache(cache: PathBuf, code: &str) -> Result<Self> {
+    async fn load_cache(cache: &Path, code: &str) -> Result<Self> {
         let path = Self::cache_file_path(cache, code);
         let data = fs::read_to_string(&path).await?;
         let deck = serde_json::from_str(&data)?;
         Ok(deck)
     }
 
-    /// Checks if a cached file is older than `MAX_AGE`
-    async fn needs_update(path: &PathBuf) -> Result<bool> {
-        let meta = metadata(path).await?;
-        let modified = meta.modified()?;
-        let now = SystemTime::now();
-
-        if let Ok(elapsed) = now.duration_since(modified) {
-            Ok(elapsed > MAX_AGE)
-        } else {
-            Ok(true)
-        }
-    }
-
     /// Save a deck to disk cache.
-    pub async fn save(&self, cache: PathBuf) -> Result<()> {
+    pub async fn save(&self, cache: &Path) -> Result<()> {
         let path = Self::cache_file_path(cache, &self.deckcode);
         let mut f = fs::File::create(&path).await?;
         let data = serde_json::to_string_pretty(self)?;
@@ -78,27 +79,27 @@ impl Deck {
             .json::<CrCastResponse>()
             .await?;
 
-        Ok(resp.into())
+        let mut deck: Deck = resp.into();
+        deck.fetched_at = now();
+
+        Ok(deck)
     }
 
-    pub async fn get_all_cached_info(
-        cache: PathBuf,
-        decks_before: Option<Vec<DeckInfo>>,
-    ) -> Result<Vec<DeckInfo>> {
-        let all = Deck::get_all_cached(cache).await?;
-
-        let mut infos: Vec<DeckInfo> = all
+    /// To format decks into the DeckInfo used in Settings
+    fn into_info(decks: Vec<Deck>, last_info: Option<Vec<DeckInfo>>) -> Vec<DeckInfo> {
+        let mut infos: Vec<DeckInfo> = decks
             .into_iter()
             .map(|d| DeckInfo {
                 name: d.name.clone(),
                 deckcode: d.deckcode.clone(),
                 enabled: false,
+                fetched_at: d.fetched_at,
             })
             .collect();
 
-        // Apply enabled from decks_before
-        if let Some(decks_before) = decks_before {
-            for before in decks_before {
+        // Apply enabled from last_info
+        if let Some(last_info) = last_info {
+            for before in last_info {
                 if let Some((i, _)) = infos
                     .iter()
                     .enumerate()
@@ -109,28 +110,43 @@ impl Deck {
             }
         }
 
-        Ok(infos)
+        infos
     }
 
-    /// List all downloaded decks by code, loading them from disk
-    pub async fn get_all_cached(cache: PathBuf) -> Result<Vec<Self>> {
+    /// Lists all downloaded deck infos
+    ///
+    /// Simply loading them from disk
+    pub async fn get_all_cached_info(
+        cache: &PathBuf,
+        last_info: Option<Vec<DeckInfo>>,
+    ) -> Result<Vec<DeckInfo>> {
+        let all = Deck::get_all_cached(cache).await?;
+        Ok(Self::into_info(all, last_info))
+    }
+
+    /// Lists all downloaded decks
+    ///
+    /// First updating and then loading them from disk
+    pub async fn update_all_cached_info(
+        cache: &PathBuf,
+        last_info: Option<Vec<DeckInfo>>,
+    ) -> Result<Vec<DeckInfo>> {
+        let all = Deck::update_all_cached(cache).await?;
+        Ok(Self::into_info(all, last_info))
+    }
+
+    /// Helper for reading cached folder and returning decks
+    async fn all_cached(cache: &PathBuf) -> Result<Vec<Self>> {
         let mut decks = Vec::new();
 
         if cache.exists() {
-            let mut entries = fs::read_dir(cache.clone()).await?;
+            let mut entries = fs::read_dir(cache).await?;
             while let Some(entry) = entries.next_entry().await? {
                 let path = entry.path();
 
                 if path.extension().and_then(|e| e.to_str()) == Some("json") {
                     if let Ok(data) = fs::read_to_string(&path).await {
-                        if let Ok(mut deck) = serde_json::from_str::<Self>(&data) {
-                            if Deck::needs_update(&path).await? {
-                                if let Ok(fetched) = Deck::fetch(&deck.deckcode).await {
-                                    fetched.save(cache.clone()).await?;
-                                    // Update already read deck
-                                    deck = fetched;
-                                }
-                            }
+                        if let Ok(deck) = serde_json::from_str::<Self>(&data) {
                             decks.push(deck);
                         }
                     }
@@ -140,7 +156,33 @@ impl Deck {
         Ok(decks)
     }
 
-    pub async fn get_enabled(cache: PathBuf, settings: &Settings) -> Result<Vec<Deck>> {
+    /// Lists all downloaded decks
+    ///
+    /// Simply loading them from disk
+    pub async fn get_all_cached(cache: &PathBuf) -> Result<Vec<Self>> {
+        let decks = Self::all_cached(cache).await?;
+        Ok(decks)
+    }
+
+    /// Lists all downloaded decks
+    ///
+    /// First updating and then loading them from disk
+    pub async fn update_all_cached(cache: &PathBuf) -> Result<Vec<Self>> {
+        let mut decks = Vec::new();
+
+        for mut deck in Self::all_cached(cache).await? {
+            if let Ok(fetched) = Self::fetch(&deck.deckcode).await {
+                fetched.save(cache).await?;
+                deck = fetched;
+            }
+            decks.push(deck);
+        }
+
+        Ok(decks)
+    }
+
+    /// Get all extensions which are enabled in the `settings`
+    pub async fn get_enabled(cache: &Path, settings: &Settings) -> Result<Vec<Deck>> {
         let codes: Vec<&str> = settings
             .decks
             .iter()
@@ -150,7 +192,7 @@ impl Deck {
 
         let mut enabled = Vec::new();
         for code in codes {
-            if let Ok(deck) = Self::load_cache(cache.clone(), code).await {
+            if let Ok(deck) = Self::load_cache(cache, code).await {
                 enabled.push(deck);
             }
         }
@@ -166,7 +208,7 @@ pub struct WhiteCard {
 impl WhiteCard {
     /// Pick multiple random white cards (up to `count`) from all cached decks
     pub async fn choose_random(
-        cache: PathBuf,
+        cache: &Path,
         count: usize,
         settings: &Settings,
     ) -> Result<Vec<WhiteCard>> {
@@ -201,7 +243,7 @@ pub struct BlackCard {
 
 impl BlackCard {
     /// Pick a single random black card from all cached decks
-    pub async fn choose_random(cache: PathBuf, settings: &Settings) -> Result<BlackCard> {
+    pub async fn choose_random(cache: &Path, settings: &Settings) -> Result<BlackCard> {
         let decks = Deck::get_enabled(cache, settings).await?;
 
         if !decks.is_empty() {
@@ -268,6 +310,7 @@ impl From<CrCastResponse> for Deck {
             deckcode: code,
             blacks,
             whites,
+            fetched_at: empty_timestamp(),
         }
     }
 }

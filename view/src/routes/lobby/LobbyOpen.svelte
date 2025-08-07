@@ -4,7 +4,7 @@
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import { areObjectsEqual, deepClone, sortedEntries } from '$lib/utils';
 	import { Tabs } from '@skeletonlabs/skeleton-svelte';
-	import { Crown, Eye, EyeOff, Play, Settings2 } from 'lucide-svelte';
+	import { Crown, Eye, EyeOff, LoaderCircle, Play, Settings2 } from 'lucide-svelte';
 	import AddDeck from './AddDeck.svelte';
 	import type { Connection, Lobby, Own } from './+page.svelte';
 
@@ -14,20 +14,75 @@
 		own: Own;
 	}
 
+	let { connection, lobby, own }: Props = $props();
+
 	let tabs = $state('lobby');
+
+	let isHost = $derived(lobby.state?.players[own.id]?.is_host || false);
 	let hide_url = $state(true);
+	let lobbyUrl = $derived(`${page.url.origin}/lobby?id=${lobby.id}`);
+
+	const autoSaveDelay = 2_000;
+	let autoSaveTimeout: number | undefined;
+	let autoSaveRemaining = $state(0);
+	let autoSaveActive = $state(false);
+	let autoSaveInterval: number | undefined;
+	let lastSettings: api.Settings | undefined;
+
+	let updating_decks = $state(false);
 	let changable_settings: api.Settings | undefined = $state();
+	let changes = $derived(
+		!areObjectsEqual(changable_settings, lobby.state?.settings) && !!changable_settings?.max_players
+	);
+
+	$effect(() => {
+		if (lobby.state?.settings.decks) updating_decks = false;
+	});
 	$effect(() => {
 		changable_settings = deepClone(lobby.state?.settings);
 	});
+	$effect(applySave);
 
-	let { connection, lobby, own }: Props = $props();
+	function applySave() {
+		if (!isHost || !changes) {
+			clearTimers();
+			lastSettings = undefined;
+			return;
+		}
 
-	let isHost = $derived(lobby.state?.players[own.id]?.is_host || false);
-	let lobbyUrl = $derived(`${page.url.origin}/lobby?id=${lobby.id}`);
-	let applyable = $derived(
-		!areObjectsEqual(changable_settings, lobby.state?.settings) && changable_settings?.max_players
-	);
+		if (!areObjectsEqual(changable_settings, lastSettings)) {
+			lastSettings = deepClone(changable_settings);
+
+			clearTimers();
+
+			autoSaveRemaining = autoSaveDelay;
+			autoSaveActive = true;
+
+			// Setup displaying value
+			autoSaveInterval = setInterval(() => {
+				autoSaveRemaining -= 100;
+				if (autoSaveRemaining <= 0) {
+					autoSaveRemaining = 0;
+					clearInterval(autoSaveInterval);
+				}
+			}, 100);
+
+			// Setup general timout
+			autoSaveTimeout = setTimeout(() => {
+				update_settings();
+				autoSaveActive = false;
+				autoSaveRemaining = 0;
+				clearInterval(autoSaveInterval);
+			}, autoSaveDelay);
+		}
+	}
+
+	function clearTimers() {
+		if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+		if (autoSaveInterval) clearInterval(autoSaveInterval);
+		autoSaveActive = false;
+		autoSaveRemaining = 0;
+	}
 
 	function handleMaxPlayers(e: Event) {
 		let target = e.target as HTMLInputElement;
@@ -52,7 +107,8 @@
 	}
 
 	function get_decks() {
-		api.send_ws(connection.ws!, { type: 'GetDecks' });
+		api.send_ws(connection.ws!, { type: 'FetchDecks' });
+		updating_decks = true;
 	}
 
 	function update_settings() {
@@ -194,6 +250,9 @@
 												href="https://cast.clrtd.com/deck/{deck.deckcode}"
 												target="_blank">{deck.deckcode}</a
 											>
+											<span class="text-surface-800-200 text-xs">
+												{new Date(deck.fetched_at * 1000).toLocaleString()}
+											</span>
 										</span>
 									</label>
 								{/each}
@@ -206,9 +265,17 @@
 										<button
 											class="preset-filled-primary-500 btn"
 											title="Update Decks"
-											onclick={get_decks}>Update</button
+											onclick={get_decks}
+											disabled={updating_decks || changes}
 										>
-										<AddDeck {connection} />
+											{#if updating_decks}
+												<LoaderCircle class="animate-spin" />
+												Updating...
+											{:else}
+												Update All
+											{/if}
+										</button>
+										<AddDeck {connection} disabled={changes || updating_decks} />
 									</div>
 								</div>
 							{/if}
@@ -289,23 +356,13 @@
 								</select>
 							</label>
 						</div>
+						{#if autoSaveActive}
+							<div class="text-primary-500 flex items-center gap-1 text-xs">
+								<LoaderCircle class="animate-spin" size={16} />
+								Applying in {(autoSaveRemaining / 1000).toFixed(1)}s...
+							</div>
+						{/if}
 					</div>
-
-					{#if isHost}
-						<div class="grid gap-1.5 sm:grid-cols-2">
-							<button
-								class="btn preset-filled-error-500"
-								disabled={!applyable}
-								onclick={() => (changable_settings = deepClone(lobby.state?.settings))}
-								>Reset</button
-							>
-							<button
-								class="btn preset-filled-success-500"
-								disabled={!applyable}
-								onclick={update_settings}>Apply</button
-							>
-						</div>
-					{/if}
 				{/if}
 			</Tabs.Panel>
 		{/snippet}

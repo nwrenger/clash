@@ -3,6 +3,7 @@ use rand::{rng, seq::SliceRandom};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, VecDeque},
+    future::Future,
     path::PathBuf,
     sync::Arc,
     time::Duration,
@@ -90,7 +91,7 @@ impl Lobby {
         {
             let mut guard = lobby.state.write().await;
             guard.settings = Settings::default();
-            let all_decks = Deck::get_all_cached_info(cache, None).await?;
+            let all_decks = Deck::get_all_cached_info(&cache, None).await?;
             guard.settings.decks = all_decks;
             guard.round = 1;
             guard.phase = GamePhase::LobbyOpen;
@@ -360,30 +361,39 @@ impl Lobby {
     pub async fn add_deck(&self, player_id: &Uuid, deckcode: String) -> Result<()> {
         if self.is_host(player_id).await && self.has_phase(GamePhase::LobbyOpen).await {
             let fetched = Deck::fetch(&deckcode).await?;
-            fetched.save(self.cache.clone()).await?;
+            fetched.save(&self.cache).await?;
 
-            self.update_decks().await
+            self.update_decks(|settings| async {
+                Deck::get_all_cached_info(&self.cache, Some(settings.decks)).await
+            })
+            .await
         } else {
             Err(Error::Unauthorized)
         }
     }
 
-    pub async fn get_decks(&self, player_id: &Uuid) -> Result<()> {
+    pub async fn fetch_decks(&self, player_id: &Uuid) -> Result<()> {
         if self.is_host(player_id).await && self.has_phase(GamePhase::LobbyOpen).await {
-            self.update_decks().await
+            self.update_decks(|settings| async {
+                Deck::update_all_cached_info(&self.cache, Some(settings.decks)).await
+            })
+            .await
         } else {
             Err(Error::Unauthorized)
         }
     }
 
-    async fn update_decks(&self) -> Result<()> {
+    async fn update_decks<F, Fut>(&self, p: F) -> Result<()>
+    where
+        F: FnOnce(Settings) -> Fut,
+        Fut: Future<Output = Result<Vec<DeckInfo>>>,
+    {
         let settings = {
             let guard = self.state.read().await;
             guard.settings.clone()
         };
 
-        let decks: Vec<DeckInfo> =
-            Deck::get_all_cached_info(self.cache.to_owned(), Some(settings.decks)).await?;
+        let decks = p(settings).await?;
 
         // update settings
         {
@@ -638,7 +648,7 @@ impl Lobby {
             let guard = self.state.read().await;
             guard.settings.clone()
         };
-        let black = BlackCard::choose_random(self.cache.to_owned(), &settings).await?;
+        let black = BlackCard::choose_random(&self.cache, &settings).await?;
         {
             let mut guard = self.state.write().await;
             guard.black_card = Some(black.clone());
@@ -665,8 +675,7 @@ impl Lobby {
         let mut deals: Vec<(Uuid, Vec<WhiteCard>)> = Vec::with_capacity(needs.len());
         for (player_id, count) in needs {
             if count > 0 {
-                let new_cards =
-                    WhiteCard::choose_random(self.cache.to_owned(), count, &settings).await?;
+                let new_cards = WhiteCard::choose_random(&self.cache, count, &settings).await?;
                 deals.push((player_id, new_cards));
             }
         }
@@ -814,7 +823,7 @@ impl Lobby {
         let decks_enabled = guard.settings.decks.iter().any(|f| f.enabled);
 
         let settings = &guard.settings;
-        let decks = Deck::get_enabled(self.cache.clone(), settings).await?;
+        let decks = Deck::get_enabled(&self.cache, settings).await?;
 
         let has_all_kinds = decks.iter().any(|f| !f.blacks.is_empty())
             && decks.iter().any(|f| !f.whites.is_empty());

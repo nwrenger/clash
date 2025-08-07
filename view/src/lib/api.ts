@@ -69,6 +69,7 @@ namespace api {
 		name: string;
 		deckcode: string;
 		enabled: boolean;
+		fetched_at: number;
 	}
 
 	export interface PlayerInfo {
@@ -90,7 +91,7 @@ namespace api {
 		| { type: 'JoinLobby'; data: { name: string; id: Uuid } }
 		| { type: 'UpdateSettings'; data: { settings: Settings } }
 		| { type: 'AddDeck'; data: { deckcode: String } }
-		| { type: 'GetDecks' }
+		| { type: 'FetchDecks' }
 		| { type: 'Kick'; data: { kicked: Uuid } }
 		| { type: 'StartRound' }
 		| { type: 'RestartRound' }

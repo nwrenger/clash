@@ -26,8 +26,6 @@ use crate::server::{create_lobby, ws::ws_handler, ServerState};
 
 /// General timeout interval is 30 Minutes
 pub const TIMEOUT_INTERVAL: Duration = Duration::from_secs(30 * 60);
-/// For the specific max age each deck can have, it's 15 Minutes
-pub const MAX_AGE: Duration = Duration::from_secs(15 * 60);
 /// The grace period, where players are able to rejoin, is 1 Minute
 pub const GRACE_PERIOD: Duration = Duration::from_secs(60);
 

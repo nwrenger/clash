@@ -5,9 +5,10 @@
 
 	interface Props {
 		connection: Connection;
+		disabled: boolean;
 	}
 
-	let { connection }: Props = $props();
+	let { connection, disabled }: Props = $props();
 
 	let deckcode = $state('');
 	let openState = $state(false);
@@ -32,7 +33,9 @@
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet trigger()}
-		<button class="btn preset-filled-primary-500 w-full" title="Add a Deck"> Add </button>
+		<button class="btn preset-filled-primary-500 w-full" title="Add a Deck" {disabled}>
+			Add
+		</button>
 	{/snippet}
 	{#snippet content()}
 		<header class="flex justify-between">

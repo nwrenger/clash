@@ -24,12 +24,13 @@
 			{@const url = card.text.replace('[img]', '').replace('[/img]', '')}
 			<img src={url} alt={url} class="aspect-auto h-fit max-h-full w-fit max-w-full" />
 		{:else}
+			{@const text = card.text.replaceAll('\n', '<br/>')}
 			<span
 				class="{text_classes} {card.text.length > 100
 					? 'text-xs'
 					: 'text-sm'} text-sm font-bold break-normal"
 			>
-				{card.text}
+				{@html text}
 			</span>
 		{/if}
 	</div>
