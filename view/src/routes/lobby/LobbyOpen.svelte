@@ -284,7 +284,7 @@
 									<div class="grid gap-1.5 sm:grid-cols-2">
 										<button
 											class="preset-filled-primary-500 btn"
-											title="Update Decks"
+											title="Update all Decks"
 											onclick={get_decks}
 											disabled={saving}
 										>
