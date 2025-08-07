@@ -138,15 +138,11 @@
 		{#snippet list()}
 			<Tabs.Control value="lobby" labelBase="btn hover:filter-none!">
 				{#snippet lead()}<Play size="18" />{/snippet}
-				<div class="w-8 sm:w-full">
-					<div class="truncate">Lobby</div>
-				</div>
+				<span>Lobby</span>
 			</Tabs.Control>
 			<Tabs.Control value="settings" labelBase="btn hover:filter-none!">
 				{#snippet lead()}<Settings2 size="18" />{/snippet}
-				<div class="w-8 sm:w-full">
-					<div class="truncate">Settings</div>
-				</div>
+				<span>Settings</span>
 			</Tabs.Control>
 		{/snippet}
 		{#snippet content()}
@@ -225,7 +221,8 @@
 						<Tooltip
 							open={saving}
 							positioning={{ placement: 'bottom' }}
-							triggerBase=""
+							base="flex w-full sm:w-auto items-center justify-center"
+							triggerBase="w-full sm:w-auto"
 							contentBase="card preset-filled-warning-500 p-4 max-w-[calc(100vw-80px)] text-center"
 							openDelay={200}
 							closeDelay={200}
@@ -234,7 +231,7 @@
 						>
 							{#snippet trigger()}
 								<button
-									class="btn preset-filled-primary-500 flex w-full items-center justify-center sm:w-auto"
+									class="btn preset-filled-primary-500 w-full sm:w-auto"
 									onclick={start_game}
 									disabled={saving}
 								>
@@ -244,7 +241,7 @@
 							{#snippet content()}
 								<span class="flex items-center gap-2">
 									<LoaderCircle class="animate-spin" size={18} />
-									<span>Saving settings. Please wait...</span>
+									<span>Saving settings...</span>
 								</span>
 							{/snippet}
 						</Tooltip>
