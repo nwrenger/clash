@@ -11,12 +11,12 @@
 	let { connection, disabled }: Props = $props();
 
 	let deckcode = $state('');
-	let openState = $state(false);
+	let open = $state(false);
 
 	function modalClose() {
 		// reset
 		deckcode = '';
-		openState = false;
+		open = false;
 	}
 
 	function add() {
@@ -26,8 +26,8 @@
 </script>
 
 <Modal
-	open={openState}
-	onOpenChange={(e) => (openState = e.open)}
+	{open}
+	onOpenChange={(e) => (open = e.open)}
 	triggerBase="w-full"
 	contentBase="card bg-surface-100-900 p-4 space-y-4 shadow-xl max-w-screen-sm"
 	backdropClasses="backdrop-blur-sm"

@@ -18,16 +18,17 @@
 
 	let tabs = $state('lobby');
 
-	let isHost = $derived(lobby.state?.players[own.id]?.is_host || false);
+	let host = $derived(lobby.state?.players[own.id]?.is_host || false);
 	let hide_url = $state(true);
-	let lobbyUrl = $derived(`${page.url.origin}/lobby?id=${lobby.id}`);
+	let lobby_url = $derived(`${page.url.origin}/lobby?id=${lobby.id}`);
 
-	const autoSaveDelay = 2_000;
-	let autoSaveTimeout: number | undefined;
-	let autoSaveRemaining = $state(0);
-	let autoSaveActive = $state(false);
-	let autoSaveInterval: number | undefined;
-	let lastSettings: api.Settings | undefined;
+	let auto_save = $state({
+		delay: 2_000,
+		remaining: 0,
+		active: false,
+		interval: undefined as number | undefined,
+		last_settings: undefined as api.Settings | undefined
+	});
 
 	let updating_decks = $state(false);
 	let changable_settings: api.Settings | undefined = $state();
@@ -45,44 +46,35 @@
 	$effect(applySave);
 
 	function applySave() {
-		if (!isHost || !changes) {
-			clearTimers();
-			lastSettings = undefined;
+		if (!host || !changes) {
+			clearAutoSave();
+			auto_save.last_settings = undefined;
 			return;
 		}
 
-		if (!areObjectsEqual(changable_settings, lastSettings)) {
-			lastSettings = deepClone(changable_settings);
+		if (!areObjectsEqual(changable_settings, auto_save.last_settings)) {
+			auto_save.last_settings = deepClone(changable_settings);
 
-			clearTimers();
+			clearAutoSave();
 
-			autoSaveRemaining = autoSaveDelay;
-			autoSaveActive = true;
+			auto_save.remaining = auto_save.delay;
+			auto_save.active = true;
 
-			// Setup displaying value
-			autoSaveInterval = setInterval(() => {
-				autoSaveRemaining -= 100;
-				if (autoSaveRemaining <= 0) {
-					autoSaveRemaining = 0;
-					clearInterval(autoSaveInterval);
+			// Setup interval, used instead of a timeout for display
+			auto_save.interval = setInterval(() => {
+				auto_save.remaining -= 100;
+				if (auto_save.remaining <= 0) {
+					update_settings();
+					clearAutoSave();
 				}
 			}, 100);
-
-			// Setup general timout
-			autoSaveTimeout = setTimeout(() => {
-				update_settings();
-				autoSaveActive = false;
-				autoSaveRemaining = 0;
-				clearInterval(autoSaveInterval);
-			}, autoSaveDelay);
 		}
 	}
 
-	function clearTimers() {
-		if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
-		if (autoSaveInterval) clearInterval(autoSaveInterval);
-		autoSaveActive = false;
-		autoSaveRemaining = 0;
+	function clearAutoSave() {
+		if (auto_save.interval) clearInterval(auto_save.interval);
+		auto_save.active = false;
+		auto_save.remaining = 0;
 	}
 
 	function handleMaxPlayers(e: Event) {
@@ -162,8 +154,8 @@
 								<Eye size="20" />
 							{/if}
 						</button>
-						<input class="ig-input {hide_url ? 'blur-sm' : ''}" value={lobbyUrl} readonly />
-						<CopyButton class="ig-btn preset-filled-secondary-500" id="cp-button" text={lobbyUrl}>
+						<input class="ig-input {hide_url ? 'blur-sm' : ''}" value={lobby_url} readonly />
+						<CopyButton class="ig-btn preset-filled-secondary-500" id="cp-button" text={lobby_url}>
 							{#snippet child({ copied })}
 								{#if copied}
 									Copied
@@ -177,7 +169,7 @@
 				<hr class="hr" />
 				<div class="mx-auto flex w-full max-w-(--breakpoint-xl) flex-wrap justify-center gap-2">
 					{#each sortedEntries(lobby.state?.players) as [id, player]}
-						{#if isHost}
+						{#if host}
 							<button
 								class="card relative {id === own.id
 									? 'preset-filled-tertiary-500'
@@ -215,7 +207,7 @@
 					{/each}
 				</div>
 
-				{#if isHost}
+				{#if host}
 					<hr class="hr" />
 					<div class="flex w-full items-center justify-center space-x-2">
 						<Tooltip
@@ -257,7 +249,7 @@
 								{#each changable_settings.decks as deck}
 									<label class="flex items-center space-x-2">
 										<input
-											disabled={!isHost}
+											disabled={!host}
 											class="checkbox"
 											type="checkbox"
 											checked={deck.enabled}
@@ -278,7 +270,7 @@
 								{/each}
 							</div>
 
-							{#if isHost}
+							{#if host}
 								<div class="label">
 									<span class="label-text">Manage Decks</span>
 									<div class="grid gap-1.5 sm:grid-cols-2">
@@ -304,11 +296,7 @@
 							<label class="label">
 								<span class="label-text">Max Rounds</span>
 
-								<select
-									class="select"
-									bind:value={changable_settings.max_rounds}
-									disabled={!isHost}
-								>
+								<select class="select" bind:value={changable_settings.max_rounds} disabled={!host}>
 									{#each Array.from({ length: 69 }) as _, i}
 										{@const round = i + 1}
 										<option value={round}>{round}</option>
@@ -326,7 +314,7 @@
 									placeholder="Input max players..."
 									oninput={handleMaxPlayers}
 									value={changable_settings.max_players}
-									disabled={!isHost}
+									disabled={!host}
 								/>
 							</label>
 						</div>
@@ -337,7 +325,7 @@
 								<select
 									class="select"
 									bind:value={changable_settings.wait_time_secs}
-									disabled={!isHost}
+									disabled={!host}
 								>
 									<option value={null}>None</option>
 									{#each [5, 10, 15, 20] as s}
@@ -353,7 +341,7 @@
 								<select
 									class="select"
 									bind:value={changable_settings.max_submitting_time_secs}
-									disabled={!isHost}
+									disabled={!host}
 								>
 									<option value={null}>None</option>
 									{#each [15, 30, 45, 60, 75, 90, 105, 120] as s}
@@ -367,7 +355,7 @@
 								<select
 									class="select"
 									bind:value={changable_settings.max_judging_time_secs}
-									disabled={!isHost}
+									disabled={!host}
 								>
 									<option value={null}>None</option>
 									{#each [15, 30, 45, 60, 75, 90, 105, 120] as s}
@@ -376,10 +364,10 @@
 								</select>
 							</label>
 						</div>
-						{#if autoSaveActive}
+						{#if auto_save.active}
 							<div class="text-primary-500 flex items-center gap-1 text-xs">
 								<LoaderCircle class="animate-spin" size={16} />
-								Applying in {(autoSaveRemaining / 1000).toFixed(1)}s...
+								Applying in {(auto_save.remaining / 1000).toFixed(1)}s...
 							</div>
 						{:else if changes}
 							<div class="text-primary-500 flex items-center gap-1 text-xs">

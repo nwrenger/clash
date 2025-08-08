@@ -69,17 +69,17 @@
 		time: {}
 	});
 
-	let isJoining = $derived(!lobby.state && connection.connected);
-	let isOpen = $derived(lobby.state?.phase == 'LobbyOpen');
-	let isSubmitting = $derived(lobby.state?.phase == 'Submitting');
-	let isJudging = $derived(lobby.state?.phase == 'Judging');
-	let isFinished = $derived(lobby.state?.phase == 'RoundFinished');
-	let isGaming = $derived(isSubmitting || isJudging || isFinished);
-	let isOver = $derived(lobby.state?.phase == 'GameOver');
+	let joining = $derived(!lobby.state && connection.connected);
+	let open = $derived(lobby.state?.phase == 'LobbyOpen');
+	let submitting = $derived(lobby.state?.phase == 'Submitting');
+	let judging = $derived(lobby.state?.phase == 'Judging');
+	let finished = $derived(lobby.state?.phase == 'RoundFinished');
+	let gaming = $derived(submitting || judging || finished);
+	let over = $derived(lobby.state?.phase == 'GameOver');
 
 	// Prevent Navigation when in Game/Game Over
 	beforeNavigate(({ cancel, type }) => {
-		if ((isGaming || isOver) && type != 'leave') {
+		if ((gaming || over) && type != 'leave') {
 			toaster.warning({
 				title: 'Navigation Cancelled',
 				description: 'Your Navigation was cancelled due to a running game!'
@@ -179,7 +179,7 @@
 		let kicked_id = msg.data.player_id;
 		delete lobby.state.players[kicked_id];
 
-		if (isGaming) {
+		if (gaming) {
 			toaster.error({
 				title: 'Game Interrupted',
 				description: 'A player left the lobby during the game, so it could not continue.'
@@ -205,7 +205,7 @@
 	function onStartRound(msg: Extract<api.IncommingEvent, { type: 'StartRound' }>) {
 		if (!lobby.state) return;
 
-		set_phase('Submitting');
+		setPhase('Submitting');
 		round.count += 1;
 
 		resetRound();
@@ -251,12 +251,12 @@
 	}
 
 	function onRevealCards(msg: Extract<api.IncommingEvent, { type: 'RevealCards' }>) {
-		set_phase('Judging');
+		setPhase('Judging');
 		round.revealed_cards = msg.data.selected_cards;
 	}
 
 	function onRoundSkip() {
-		set_phase('RoundFinished');
+		setPhase('RoundFinished');
 		toaster.info({
 			title: 'Skipped',
 			description:
@@ -267,7 +267,7 @@
 	function onRoundResult(msg: Extract<api.IncommingEvent, { type: 'RoundResult' }>) {
 		if (!lobby.state) return;
 
-		set_phase('RoundFinished');
+		setPhase('RoundFinished');
 		round.result = msg.data;
 
 		let winner = lobby.state.players[round.result.player_id];
@@ -280,13 +280,13 @@
 	}
 
 	function onGameOver() {
-		set_phase('GameOver');
+		setPhase('GameOver');
 	}
 
 	function onLobbyReset() {
 		if (!lobby.state) return;
 
-		set_phase('LobbyOpen');
+		setPhase('LobbyOpen');
 		for (const [_, player] of sortedEntries(lobby.state.players)) {
 			player.points = 0;
 		}
@@ -365,7 +365,7 @@
 		$credentials = { lobby_id: lobby.id as api.Uuid, id: own.id, name: own.name };
 	}
 
-	function set_phase(phase: api.GamePhase) {
+	function setPhase(phase: api.GamePhase) {
 		if (!lobby.state) return;
 		lobby.state.phase = phase;
 
@@ -391,27 +391,27 @@
 <!-- Prevent Closing when in Game/Game Over -->
 <svelte:window
 	onbeforeunload={(e) => {
-		if (isGaming || isOver) {
+		if (gaming || over) {
 			e.preventDefault();
 			return '';
 		}
 	}}
 />
 
-{#if isJoining}
+{#if joining}
 	<Joining bind:own_name={own.name} {join_lobby} />
-{:else if isOpen}
+{:else if open}
 	<LobbyOpen {connection} {lobby} {own} />
-{:else if isGaming}
+{:else if gaming}
 	{@const isCzar = lobby.state?.players[own.id]?.is_czar || false}
 	<div class="mx-auto flex max-w-7xl flex-col items-center space-y-6 px-4 py-8">
 		<TopBar {lobby} {own} {round} />
 
-		<Board {connection} {round} selectable={isCzar && isJudging} />
+		<Board {connection} {round} selectable={isCzar && judging} />
 
-		<Hand {connection} {round} bind:own selectable={!isCzar && isSubmitting} disabled={isCzar} />
+		<Hand {connection} {round} bind:own selectable={!isCzar && submitting} disabled={isCzar} />
 	</div>
-{:else if isOver}
+{:else if over}
 	<GameOver {connection} {lobby} {own} />
 {:else}
 	<div class="mx-auto flex max-w-3xl flex-col items-center space-y-6 px-4 py-8">
