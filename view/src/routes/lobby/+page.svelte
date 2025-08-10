@@ -403,13 +403,13 @@
 {:else if open}
 	<LobbyOpen {connection} {lobby} {own} />
 {:else if gaming}
-	{@const isCzar = lobby.state?.players[own.id]?.is_czar || false}
+	{@const is_czar = lobby.state?.players[own.id]?.is_czar || false}
 	<div class="mx-auto flex max-w-7xl flex-col items-center space-y-6 px-4 py-8">
 		<TopBar {lobby} {own} {round} />
 
-		<Board {connection} {round} selectable={isCzar && judging} />
+		<Board {connection} {round} selectable={is_czar && judging} />
 
-		<Hand {connection} {round} bind:own selectable={!isCzar && submitting} disabled={isCzar} />
+		<Hand {connection} {round} bind:own selectable={!is_czar && submitting} disabled={is_czar} />
 	</div>
 {:else if over}
 	<GameOver {connection} {lobby} {own} />

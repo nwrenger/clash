@@ -3,8 +3,17 @@
 	import api from '$lib/api';
 	import CopyButton from '$lib/components/CopyButton.svelte';
 	import { areObjectsEqual, deepClone, sortedEntries } from '$lib/utils';
-	import { Tabs, Tooltip } from '@skeletonlabs/skeleton-svelte';
-	import { Crown, Download, Eye, EyeOff, LoaderCircle, Play, Settings2 } from 'lucide-svelte';
+	import { Tabs } from '@skeletonlabs/skeleton-svelte';
+	import {
+		Check,
+		Crown,
+		Download,
+		Eye,
+		EyeOff,
+		LoaderCircle,
+		Play,
+		Settings2
+	} from 'lucide-svelte';
 	import AddDeck from './AddDeck.svelte';
 	import type { Connection, Lobby, Own } from './+page.svelte';
 
@@ -18,7 +27,7 @@
 
 	let tabs = $state('lobby');
 
-	let host = $derived(lobby.state?.players[own.id]?.is_host || false);
+	let is_host = $derived(lobby.state?.players[own.id]?.is_host || false);
 	let hide_url = $state(true);
 	let lobby_url = $derived(`${page.url.origin}/lobby?id=${lobby.id}`);
 
@@ -46,7 +55,7 @@
 	$effect(applySave);
 
 	function applySave() {
-		if (!host || !changes) {
+		if (!is_host || !changes) {
 			clearAutoSave();
 			auto_save.last_settings = undefined;
 			return;
@@ -169,7 +178,7 @@
 				<hr class="hr" />
 				<div class="mx-auto flex w-full max-w-(--breakpoint-xl) flex-wrap justify-center gap-2">
 					{#each sortedEntries(lobby.state?.players) as [id, player]}
-						{#if host}
+						{#if is_host}
 							<button
 								class="card relative {id === own.id
 									? 'preset-filled-tertiary-500'
@@ -207,36 +216,22 @@
 					{/each}
 				</div>
 
-				{#if host}
+				{#if is_host}
 					<hr class="hr" />
-					<div class="flex w-full items-center justify-center space-x-2">
-						<Tooltip
-							open={saving}
-							positioning={{ placement: 'bottom' }}
-							base="flex w-full sm:w-auto items-center justify-center"
-							triggerBase="w-full sm:w-auto"
-							contentBase="card preset-filled-warning-500 p-4 max-w-[calc(100vw-80px)] text-center"
-							openDelay={200}
-							closeDelay={200}
-							arrowBackground="var(--color-warning-500)"
-							arrow
+					<div class="flex w-full flex-col items-center justify-center space-y-2">
+						<button
+							class="btn preset-filled-primary-500 w-full sm:w-auto"
+							onclick={start_game}
+							disabled={saving}
 						>
-							{#snippet trigger()}
-								<button
-									class="btn preset-filled-primary-500 w-full sm:w-auto"
-									onclick={start_game}
-									disabled={saving}
-								>
-									Start Game
-								</button>
-							{/snippet}
-							{#snippet content()}
-								<span class="flex items-center gap-2">
-									<LoaderCircle class="animate-spin" size={18} />
-									<span>Saving settings...</span>
-								</span>
-							{/snippet}
-						</Tooltip>
+							Start Game
+						</button>
+						{#if saving}
+							<div class="text-primary-500 flex items-center gap-1 text-xs">
+								<LoaderCircle class="animate-spin" size={16} />
+								<span>Saving settings...</span>
+							</div>
+						{/if}
 					</div>
 				{/if}
 			</Tabs.Panel>
@@ -249,7 +244,7 @@
 								{#each changable_settings.decks as deck}
 									<label class="flex items-center space-x-2">
 										<input
-											disabled={!host}
+											disabled={!is_host}
 											class="checkbox"
 											type="checkbox"
 											checked={deck.enabled}
@@ -270,7 +265,7 @@
 								{/each}
 							</div>
 
-							{#if host}
+							{#if is_host}
 								<div class="label">
 									<span class="label-text">Manage Decks</span>
 									<div class="grid gap-1.5 sm:grid-cols-2">
@@ -296,7 +291,11 @@
 							<label class="label">
 								<span class="label-text">Max Rounds</span>
 
-								<select class="select" bind:value={changable_settings.max_rounds} disabled={!host}>
+								<select
+									class="select"
+									bind:value={changable_settings.max_rounds}
+									disabled={!is_host}
+								>
 									{#each Array.from({ length: 69 }) as _, i}
 										{@const round = i + 1}
 										<option value={round}>{round}</option>
@@ -314,7 +313,7 @@
 									placeholder="Input max players..."
 									oninput={handleMaxPlayers}
 									value={changable_settings.max_players}
-									disabled={!host}
+									disabled={!is_host}
 								/>
 							</label>
 						</div>
@@ -325,7 +324,7 @@
 								<select
 									class="select"
 									bind:value={changable_settings.wait_time_secs}
-									disabled={!host}
+									disabled={!is_host}
 								>
 									<option value={null}>None</option>
 									{#each [5, 10, 15, 20] as s}
@@ -341,7 +340,7 @@
 								<select
 									class="select"
 									bind:value={changable_settings.max_submitting_time_secs}
-									disabled={!host}
+									disabled={!is_host}
 								>
 									<option value={null}>None</option>
 									{#each [15, 30, 45, 60, 75, 90, 105, 120] as s}
@@ -355,7 +354,7 @@
 								<select
 									class="select"
 									bind:value={changable_settings.max_judging_time_secs}
-									disabled={!host}
+									disabled={!is_host}
 								>
 									<option value={null}>None</option>
 									{#each [15, 30, 45, 60, 75, 90, 105, 120] as s}
@@ -364,16 +363,23 @@
 								</select>
 							</label>
 						</div>
-						{#if auto_save.active}
-							<div class="text-primary-500 flex items-center gap-1 text-xs">
-								<LoaderCircle class="animate-spin" size={16} />
-								Applying in {(auto_save.remaining / 1000).toFixed(1)}s...
-							</div>
-						{:else if changes}
-							<div class="text-primary-500 flex items-center gap-1 text-xs">
-								<Download size={16} />
-								Saving...
-							</div>
+						{#if is_host}
+							{#if auto_save.active}
+								<div class="text-primary-500 flex items-center gap-1 text-xs">
+									<LoaderCircle class="animate-spin" size={16} />
+									Applying in {(auto_save.remaining / 1000).toFixed(1)}s...
+								</div>
+							{:else if changes}
+								<div class="text-primary-500 flex items-center gap-1 text-xs">
+									<Download size={16} />
+									Saving...
+								</div>
+							{:else}
+								<div class="text-primary-500 flex items-center gap-1 text-xs">
+									<Check size={16} />
+									Up to Date
+								</div>
+							{/if}
 						{/if}
 					</div>
 				{/if}
