@@ -254,8 +254,11 @@ impl Lobby {
     pub async fn send_lobby_state(&self, player_id: &Uuid) {
         let snapshot = { self.state.read().await.snapshot_for(player_id) };
         self.touch().await;
-        self.emit_private(player_id, PrivateServerEvent::ClientLobby(snapshot))
-            .await;
+        self.emit_private(
+            player_id,
+            PrivateServerEvent::ClientLobby(Box::new(snapshot)),
+        )
+        .await;
     }
 
     /// Player joins the lobby

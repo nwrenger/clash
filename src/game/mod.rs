@@ -82,7 +82,7 @@ pub enum ServerEvent {
 #[serde(tag = "type", content = "data")]
 pub enum PrivateServerEvent {
     /// Client lobby state
-    ClientLobby(ClientLobby),
+    ClientLobby(Box<ClientLobby>),
     /// Updates a player's hand (e.g., after submission or round start)
     UpdateHand { cards: Vec<WhiteCard> },
     /// A Player times out
