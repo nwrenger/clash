@@ -1,15 +1,16 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import api from '$lib/api';
-	import CopyButton from '$lib/components/CopyButton.svelte';
+	import ShareButton from '$lib/components/ShareButton.svelte';
 	import { areObjectsEqual, deepClone, sortedEntries } from '$lib/utils';
 	import { Tabs } from '@skeletonlabs/skeleton-svelte';
 	import {
 		Check,
+		ClipboardCopy,
 		Crown,
 		Download,
-		Eye,
-		EyeOff,
+		House,
+		Link,
 		LoaderCircle,
 		Play,
 		Settings2
@@ -27,8 +28,7 @@
 
 	let tabs = $state('lobby');
 
-	let is_host = $derived(lobby.state?.players[own.id]?.is_host || false);
-	let hide_url = $state(true);
+	let is_host = $derived(lobby!.players![own.id]?.is_host || false);
 	let lobby_url = $derived(`${page.url.origin}/lobby?id=${lobby.id}`);
 
 	let auto_save = $state({
@@ -42,15 +42,15 @@
 	let updating_decks = $state(false);
 	let changable_settings: api.Settings | undefined = $state();
 	let changes = $derived(
-		!areObjectsEqual(changable_settings, lobby.state?.settings) && !!changable_settings?.max_players
+		!areObjectsEqual(changable_settings, lobby?.settings) && !!changable_settings?.max_players
 	);
 	let saving = $derived(changes || updating_decks);
 
 	$effect(() => {
-		if (lobby.state?.settings.decks) updating_decks = false;
+		if (lobby?.settings?.decks) updating_decks = false;
 	});
 	$effect(() => {
-		changable_settings = deepClone(lobby.state?.settings);
+		changable_settings = deepClone(lobby?.settings);
 	});
 	$effect(applySave);
 
@@ -138,7 +138,7 @@
 	>
 		{#snippet list()}
 			<Tabs.Control value="lobby" labelBase="btn hover:filter-none!">
-				{#snippet lead()}<Play size="18" />{/snippet}
+				{#snippet lead()}<House size="18" />{/snippet}
 				<span>Lobby</span>
 			</Tabs.Control>
 			<Tabs.Control value="settings" labelBase="btn hover:filter-none!">
@@ -147,93 +147,63 @@
 			</Tabs.Control>
 		{/snippet}
 		{#snippet content()}
-			<Tabs.Panel classes="h-full space-y-6" value="lobby">
-				<div class="label">
-					<span class="label-text">Lobby Url</span>
-
-					<div class="input-group grid-cols-[auto_1fr_auto]">
-						<button
-							class="ig-btn preset-filled p-2"
-							onclick={() => (hide_url = !hide_url)}
-							title="Toggle Visibility"
-						>
-							{#if hide_url}
-								<EyeOff size="20" />
-							{:else}
-								<Eye size="20" />
-							{/if}
-						</button>
-						<input class="ig-input {hide_url ? 'blur-sm' : ''}" value={lobby_url} readonly />
-						<CopyButton class="ig-btn preset-filled-secondary-500" id="cp-button" text={lobby_url}>
-							{#snippet child({ copied })}
-								{#if copied}
-									Copied
-								{:else}
-									Copy
-								{/if}
-							{/snippet}
-						</CopyButton>
-					</div>
-				</div>
-				<hr class="hr" />
+			<Tabs.Panel classes="h-full space-y-4" value="lobby">
 				<div class="mx-auto flex w-full max-w-(--breakpoint-xl) flex-wrap justify-center gap-2">
-					{#each sortedEntries(lobby.state?.players) as [id, player]}
-						{#if is_host}
-							<button
-								class="card relative {id === own.id
-									? 'preset-filled-tertiary-500'
-									: 'preset-filled'} {id !== own.id
-									? 'hover:preset-filled-error-500'
-									: 'pointer-events-none'} px-4 py-2 transition-colors"
-								title="Kick Player?"
-								onclick={() => kick(id)}
-							>
-								<span class="flex h-full w-full items-center justify-center">
-									<span class="flex items-center space-x-1.5">
-										{#if player.is_host}
-											<Crown size={16} />
-										{/if}
-										<span>{player.name}</span>
-									</span>
+					{#each sortedEntries(lobby?.players) as [id, player]}
+						<button
+							class="card preset-filled relative {id !== own.id && is_host
+								? 'hover:preset-filled-error-500'
+								: 'pointer-events-none'} px-4 py-2 transition-colors"
+							title="Kick Player?"
+							onclick={() => kick(id)}
+						>
+							<span class="flex h-full w-full items-center justify-center">
+								<span
+									class="flex items-center space-x-1.5 {id === own.id ? 'text-primary-500' : ''}"
+								>
+									{#if player.is_host}
+										<Crown size={16} strokeWidth={2.25} />
+									{/if}
+									<span>{player.name}</span>
 								</span>
-							</button>
-						{:else}
-							<button
-								class="card relative {id === own.id
-									? 'preset-filled-tertiary-500'
-									: 'preset-filled'} pointer-events-none px-4 py-2"
-							>
-								<span class="flex h-full w-full items-center justify-center">
-									<span class="flex items-center space-x-1.5">
-										{#if player.is_host}
-											<Crown size={16} />
-										{/if}
-										<span>{player.name}</span>
-									</span>
-								</span>
-							</button>
-						{/if}
+							</span>
+						</button>
 					{/each}
 				</div>
 
-				{#if is_host}
-					<hr class="hr" />
-					<div class="flex w-full flex-col items-center justify-center space-y-2">
-						<button
-							class="btn preset-filled-primary-500 w-full sm:w-auto"
-							onclick={start_game}
-							disabled={saving}
-						>
-							Start Game
-						</button>
-						{#if saving}
-							<div class="text-primary-500 flex items-center gap-1 text-xs">
-								<LoaderCircle class="animate-spin" size={16} />
-								<span>Saving settings...</span>
+				<div class="flex w-full flex-col items-center justify-center space-y-2">
+					<div class="grid w-full gap-1.5 {is_host ? 'sm:grid-cols-2' : 'sm:w-auto'}">
+						<ShareButton class="btn preset-filled-primary-500 h-fit w-full" url={lobby_url}>
+							{#snippet child({ copied })}
+								{#if copied}
+									<ClipboardCopy size={22} />
+									Copied Invite
+								{:else}
+									<Link size={22} />
+									Invite Players
+								{/if}
+							{/snippet}
+						</ShareButton>
+						{#if is_host}
+							<div class="flex w-full flex-col space-y-2">
+								<button
+									class="btn preset-filled-primary-500"
+									onclick={start_game}
+									disabled={saving}
+								>
+									<Play size={22} />
+									Start Game
+								</button>
+								{#if saving}
+									<div class="text-primary-500 flex items-center justify-center gap-1 text-xs">
+										<LoaderCircle class="animate-spin" size={16} />
+										<span>Saving settings...</span>
+									</div>
+								{/if}
 							</div>
 						{/if}
 					</div>
-				{/if}
+				</div>
 			</Tabs.Panel>
 			<Tabs.Panel classes="h-full space-y-6" value="settings">
 				{#if changable_settings}

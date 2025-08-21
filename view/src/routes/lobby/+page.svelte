@@ -12,16 +12,27 @@
 		selected_cards: number[];
 	}
 
-	export interface Lobby {
-		id: string;
-		state?: api.LobbyState;
-	}
+	export type Lobby =
+		| {
+				id: string;
+				joined: false;
+				players?: Record<api.Uuid, api.PlayerInfo>;
+				settings?: api.Settings;
+				phase?: api.GamePhase;
+		  }
+		| {
+				id: string;
+				joined: true;
+				players: Record<api.Uuid, api.PlayerInfo>;
+				settings: api.Settings;
+				phase: api.GamePhase;
+		  };
 
 	export interface Round {
 		count: number;
 		black_card?: api.BlackCard;
 		revealed_cards: api.WhiteCard[][];
-		result?: { player_id: api.Uuid; winning_card_index: number };
+		result?: { player_id?: api.Uuid; winning_card_index?: number };
 		time: { self?: number };
 	}
 </script>
@@ -29,7 +40,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onDestroy, onMount } from 'svelte';
-	import { beforeNavigate } from '$app/navigation';
+	import { beforeNavigate, goto } from '$app/navigation';
 
 	import api from '$lib/api';
 	import { credentials } from '$lib/state';
@@ -58,7 +69,10 @@
 
 	let lobby: Lobby = $state({
 		id: '',
-		state: undefined
+		joined: false,
+		players: undefined,
+		settings: undefined,
+		phase: undefined
 	});
 
 	let round: Round = $state({
@@ -69,22 +83,20 @@
 		time: {}
 	});
 
-	let joining = $derived(!lobby.state && connection.connected);
-	let open = $derived(lobby.state?.phase == 'LobbyOpen');
-	let submitting = $derived(lobby.state?.phase == 'Submitting');
-	let judging = $derived(lobby.state?.phase == 'Judging');
-	let finished = $derived(lobby.state?.phase == 'RoundFinished');
+	let joining = $derived(!lobby.joined && connection.connected);
+	let open = $derived(lobby?.phase == 'LobbyOpen');
+	let submitting = $derived(lobby?.phase == 'Submitting');
+	let judging = $derived(lobby?.phase == 'Judging');
+	let finished = $derived(lobby?.phase == 'RoundFinished');
 	let gaming = $derived(submitting || judging || finished);
-	let over = $derived(lobby.state?.phase == 'GameOver');
+	let over = $derived(lobby?.phase == 'GameOver');
 
 	// Prevent Navigation when in Game/Game Over
 	beforeNavigate(({ cancel, type }) => {
-		if ((gaming || over) && type != 'leave') {
-			toaster.warning({
-				title: 'Navigation Cancelled',
-				description: 'Your Navigation was cancelled due to a running game!'
-			});
-			cancel();
+		if (type != 'leave' && type != 'link') {
+			if (!confirm('Your trying to navigate out of the current lobby. Proceed?')) {
+				cancel();
+			}
 		}
 	});
 
@@ -152,8 +164,8 @@
 				return onGameOver();
 			case 'LobbyReset':
 				return onLobbyReset();
-			case 'LobbyState':
-				return onLobbyState(msg);
+			case 'ClientLobby':
+				return onClientLobby(msg);
 			case 'UpdateHand':
 				return onUpdateHand(msg);
 			case 'Timeout':
@@ -166,18 +178,18 @@
 	}
 
 	function onPlayerJoin(msg: Extract<api.IncommingEvent, { type: 'PlayerJoin' }>) {
-		if (!lobby.state) return;
+		if (!lobby.joined) return;
 
 		let joined_id = msg.data.player_id;
 		let joined_info = msg.data.player_info;
-		lobby.state.players[joined_id] = joined_info;
+		lobby.players[joined_id] = joined_info;
 	}
 
 	function onPlayerRemove(msg: Extract<api.IncommingEvent, { type: 'PlayerRemove' }>) {
-		if (!lobby.state) return;
+		if (!lobby.joined) return;
 
 		let kicked_id = msg.data.player_id;
-		delete lobby.state.players[kicked_id];
+		delete lobby.players[kicked_id];
 
 		if (gaming) {
 			toaster.error({
@@ -188,10 +200,10 @@
 	}
 
 	function onAssignHost(msg: Extract<api.IncommingEvent, { type: 'AssignHost' }>) {
-		if (!lobby.state) return;
+		if (!lobby.joined) return;
 
 		let host_id = msg.data.player_id;
-		let new_host = lobby.state.players[host_id];
+		let new_host = lobby.players[host_id];
 		new_host.is_host = true;
 		if (host_id === own.id) {
 			toaster.warning({
@@ -203,7 +215,7 @@
 	}
 
 	function onStartRound(msg: Extract<api.IncommingEvent, { type: 'StartRound' }>) {
-		if (!lobby.state) return;
+		if (!lobby.joined) return;
 
 		setPhase('Submitting');
 		round.count += 1;
@@ -211,7 +223,7 @@
 		resetRound();
 
 		let czar_id = msg.data.czar_id;
-		let czar = lobby.state.players[czar_id];
+		let czar = lobby.players[czar_id];
 		if (czar) {
 			czar.is_czar = true;
 			if (czar_id == own.id) {
@@ -225,10 +237,10 @@
 	}
 
 	function onCardsSubmitted(msg: Extract<api.IncommingEvent, { type: 'CardsSubmitted' }>) {
-		if (!lobby.state || !round.black_card) return;
+		if (!lobby.joined || !round.black_card) return;
 
 		let id = msg.data.player_id;
-		let player_submit = lobby.state.players[id];
+		let player_submit = lobby.players[id];
 		let placeholders = [];
 		for (let i = 0; i < round.black_card.fields; i++) {
 			if (id === own.id) {
@@ -241,13 +253,13 @@
 	}
 
 	function onUpdateDecks(msg: Extract<api.IncommingEvent, { type: 'UpdateDecks' }>) {
-		if (!lobby.state) return;
-		lobby.state.settings.decks = msg.data.decks;
+		if (!lobby.joined) return;
+		lobby.settings.decks = msg.data.decks;
 	}
 
 	function onUpdateSettings(msg: Extract<api.IncommingEvent, { type: 'UpdateSettings' }>) {
-		if (!lobby.state) return;
-		lobby.state.settings = msg.data.settings;
+		if (!lobby.joined) return;
+		lobby.settings = msg.data.settings;
 	}
 
 	function onRevealCards(msg: Extract<api.IncommingEvent, { type: 'RevealCards' }>) {
@@ -265,17 +277,19 @@
 	}
 
 	function onRoundResult(msg: Extract<api.IncommingEvent, { type: 'RoundResult' }>) {
-		if (!lobby.state) return;
+		if (!lobby.joined) return;
 
 		setPhase('RoundFinished');
 		round.result = msg.data;
 
-		let winner = lobby.state.players[round.result.player_id];
-		winner.points += 1;
-		if (round.result.player_id == own.id) {
-			toaster.info({ title: `You are the winner of this round!` });
-		} else {
-			toaster.info({ title: `${winner.name} is the winner of this round!` });
+		if (round.result.player_id) {
+			let winner = lobby.players[round.result.player_id];
+			winner.points += 1;
+			if (round.result.player_id == own.id) {
+				toaster.info({ title: `You are the winner of this round!` });
+			} else {
+				toaster.info({ title: `${winner.name} is the winner of this round!` });
+			}
 		}
 	}
 
@@ -284,17 +298,35 @@
 	}
 
 	function onLobbyReset() {
-		if (!lobby.state) return;
+		if (!lobby.joined) return;
 
 		setPhase('LobbyOpen');
-		for (const [_, player] of sortedEntries(lobby.state.players)) {
+		for (const [_, player] of sortedEntries(lobby.players)) {
 			player.points = 0;
 		}
 		round.count = 0;
 	}
 
-	function onLobbyState(msg: Extract<api.IncommingEvent, { type: 'LobbyState' }>) {
-		lobby.state = msg.data;
+	function onClientLobby(msg: Extract<api.IncommingEvent, { type: 'ClientLobby' }>) {
+		lobby.joined = true;
+		lobby.players = msg.data.players;
+		lobby.settings = msg.data.settings;
+		lobby.phase = msg.data.phase;
+
+		round.count = msg.data.round;
+		round.black_card = msg.data.black_card;
+		round.revealed_cards = msg.data.revealed_cards || [];
+		if (msg.data.czar_pick != null) round.result = { winning_card_index: msg.data.czar_pick };
+		if (msg.data.winner != null) round.result = { player_id: msg.data.winner, ...round.result };
+
+		for (const submit_id of msg.data.submitted_players || []) {
+			onCardsSubmitted({ type: 'CardsSubmitted', data: { player_id: submit_id } });
+			if (submit_id == own.id && round.black_card) {
+				own.selected_cards = Array(round.black_card.fields).fill(-1);
+			}
+		}
+
+		if (msg.data.hand) own.cards = msg.data.hand;
 	}
 
 	function onUpdateHand(msg: Extract<api.IncommingEvent, { type: 'UpdateHand' }>) {
@@ -339,7 +371,7 @@
 		round.black_card = undefined;
 		round.revealed_cards = [];
 		round.result = undefined;
-		for (const [_, player] of sortedEntries(lobby.state?.players)) {
+		for (const [_, player] of sortedEntries(lobby?.players)) {
 			player.is_czar = false;
 		}
 	}
@@ -352,7 +384,7 @@
 	}
 
 	function disconnect() {
-		lobby.state = undefined;
+		lobby.joined = false;
 		connection.connected = false;
 	}
 
@@ -366,13 +398,13 @@
 	}
 
 	function setPhase(phase: api.GamePhase) {
-		if (!lobby.state) return;
-		lobby.state.phase = phase;
+		if (!lobby.joined) return;
+		lobby.phase = phase;
 
 		let change: number | undefined;
-		if (phase == 'RoundFinished') change = lobby.state.settings.wait_time_secs;
-		if (phase == 'Submitting') change = lobby.state.settings.max_submitting_time_secs;
-		if (phase == 'Judging') change = lobby.state.settings.max_judging_time_secs;
+		if (phase == 'RoundFinished') change = lobby.settings.wait_time_secs;
+		if (phase == 'Submitting') change = lobby.settings.max_submitting_time_secs;
+		if (phase == 'Judging') change = lobby.settings.max_judging_time_secs;
 		round.time = { self: change };
 	}
 </script>
@@ -391,10 +423,8 @@
 <!-- Prevent Closing when in Game/Game Over -->
 <svelte:window
 	onbeforeunload={(e) => {
-		if (gaming || over) {
-			e.preventDefault();
-			return '';
-		}
+		e.preventDefault();
+		return '';
 	}}
 />
 
@@ -403,7 +433,7 @@
 {:else if open}
 	<LobbyOpen {connection} {lobby} {own} />
 {:else if gaming}
-	{@const is_czar = lobby.state?.players[own.id]?.is_czar || false}
+	{@const is_czar = lobby!.players![own.id]?.is_czar || false}
 	<div class="mx-auto flex max-w-7xl flex-col items-center space-y-6 px-4 py-8">
 		<TopBar {lobby} {own} {round} />
 

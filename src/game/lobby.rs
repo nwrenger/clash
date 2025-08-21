@@ -1,5 +1,5 @@
 use dashmap::DashMap;
-use rand::{rng, seq::SliceRandom};
+use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, VecDeque},
@@ -24,10 +24,56 @@ use crate::{
     error::{Error, Result},
     game::{
         deck::{BlackCard, Deck, DeckInfo, WhiteCard},
-        LobbyState, Player, PlayerInfo, PrivateServerEvent, ServerEvent, Settings,
+        ClientLobby, Player, PlayerInfo, PrivateServerEvent, ServerEvent, Settings,
     },
     GRACE_PERIOD,
 };
+
+#[derive(Debug, Default, Clone)]
+pub struct Submissions {
+    /// Cards as revealed to clients (outer index picked by czar)
+    pub reveal: Vec<Vec<WhiteCard>>,
+    /// For the same index in `reveal`, which player submitted them
+    pub by_index: Vec<Uuid>,
+}
+
+impl Submissions {
+    pub fn clear(&mut self) {
+        self.reveal.clear();
+        self.by_index.clear();
+    }
+
+    pub fn len(&self) -> usize {
+        self.reveal.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.reveal.is_empty()
+    }
+
+    /// Applies the same permutation to both vectors.
+    pub fn shuffle_together<R: rand::Rng + ?Sized>(&mut self, rng: &mut R) {
+        let n = self.reveal.len();
+        if n <= 1 {
+            return;
+        }
+        let mut order: Vec<usize> = (0..n).collect();
+        order.shuffle(rng);
+        self.apply_permutation(&order);
+    }
+
+    fn apply_permutation(&mut self, order: &[usize]) {
+        debug_assert_eq!(self.reveal.len(), self.by_index.len());
+        let mut new_reveal = Vec::with_capacity(self.reveal.len());
+        let mut new_by_index = Vec::with_capacity(self.by_index.len());
+        for &i in order {
+            new_reveal.push(self.reveal[i].clone());
+            new_by_index.push(self.by_index[i]);
+        }
+        self.reveal = new_reveal;
+        self.by_index = new_by_index;
+    }
+}
 
 /// Inner mutable state of a lobby, protected by RwLock.
 #[derive(Debug, Default)]
@@ -37,9 +83,62 @@ pub struct LobbyData {
     pub czar_order: VecDeque<Uuid>,
     pub round: u32,
     pub black_card: Option<BlackCard>,
-    pub submissions: Vec<(Uuid, Vec<WhiteCard>)>,
+    pub submissions: Submissions,
     pub czar_pick: Option<usize>,
     pub phase: GamePhase,
+}
+
+impl LobbyData {
+    pub fn snapshot_for(&self, player_id: &Uuid) -> ClientLobby {
+        let players = self
+            .players
+            .iter()
+            .map(|(&id, p)| (id, p.info.clone()))
+            .collect();
+
+        let hand = if self.phase != GamePhase::LobbyOpen {
+            self.players.get(player_id).map(|p| p.cards.clone())
+        } else {
+            None
+        };
+
+        let revealed_cards = if self.phase != GamePhase::Submitting {
+            self.submissions.reveal.clone()
+        } else {
+            vec![]
+        };
+
+        let submitted_players = if self.phase == GamePhase::Submitting {
+            self.submissions.by_index.clone()
+        } else {
+            vec![]
+        };
+
+        let winner = if let Some(index) = self.czar_pick {
+            self.submissions.by_index.get(index).copied()
+        } else {
+            None
+        };
+
+        let black_card = if self.phase != GamePhase::LobbyOpen {
+            self.black_card.clone()
+        } else {
+            None
+        };
+
+        ClientLobby {
+            players,
+            settings: self.settings.clone(),
+            phase: self.phase,
+            round: self.round,
+            hand,
+            revealed_cards,
+            submitted_players,
+            czar_pick: self.czar_pick,
+            winner,
+            black_card,
+        }
+    }
 }
 
 /// The overall lobby/game, separating channels from state.
@@ -105,7 +204,7 @@ impl Lobby {
                 cards: Vec::new(),
             };
             guard.players.insert(host_id, host_player);
-            guard.czar_order.push_back(host_id);
+            guard.czar_order.push_front(host_id);
         }
 
         Ok(lobby)
@@ -121,6 +220,8 @@ impl Lobby {
         &self,
         player_id: Uuid,
     ) -> UnboundedReceiver<PrivateServerEvent> {
+        // Remove any old data
+        self.remove_private(&player_id);
         let (tx, rx) = unbounded_channel();
         self.private.insert(player_id, tx);
         rx
@@ -151,38 +252,14 @@ impl Lobby {
 
     /// Send the current lobby state globally
     pub async fn send_lobby_state(&self, player_id: &Uuid) {
-        let (players, settings, phase) = {
-            let guard = self.state.read().await;
-            let players = guard
-                .players
-                .iter()
-                .map(|(&id, p)| (id, p.info.clone()))
-                .collect();
-            let settings = guard.settings.clone();
-            let phase = guard.phase;
-
-            (players, settings, phase)
-        };
-
+        let snapshot = { self.state.read().await.snapshot_for(player_id) };
         self.touch().await;
-
-        self.emit_private(
-            player_id,
-            PrivateServerEvent::LobbyState(LobbyState {
-                players,
-                settings,
-                phase,
-            }),
-        )
-        .await;
+        self.emit_private(player_id, PrivateServerEvent::ClientLobby(snapshot))
+            .await;
     }
 
     /// Player joins the lobby
     pub async fn join(&self, player_name: String, player_id: Uuid) -> Result<()> {
-        if !self.has_phase(GamePhase::LobbyOpen).await {
-            return Err(Error::LobbyClosed);
-        }
-
         let mut guard = self.state.write().await;
         let is_rejoining = guard.players.contains_key(&player_id);
         let has_host = guard.players.values().any(|p| p.info.is_host);
@@ -199,6 +276,10 @@ impl Lobby {
             }
 
             return Ok(());
+        }
+
+        if guard.phase != GamePhase::LobbyOpen {
+            return Err(Error::LobbyClosed);
         }
 
         // Not rejoining, new player join
@@ -222,7 +303,7 @@ impl Lobby {
                 cards: Vec::new(),
             },
         );
-        guard.czar_order.push_back(player_id);
+        guard.czar_order.push_front(player_id);
 
         self.emit_global(ServerEvent::PlayerJoin {
             player_id,
@@ -256,14 +337,10 @@ impl Lobby {
             return;
         }
 
-        let in_lobby = self.has_phase(GamePhase::LobbyOpen).await;
-
         let lobby = self.clone();
         let handle = tokio::spawn(async move {
-            // Wait the grace period only when in a lobby
-            if in_lobby {
-                tokio::time::sleep(GRACE_PERIOD).await;
-            }
+            // Wait the grace period
+            tokio::time::sleep(GRACE_PERIOD).await;
             // If player hasn't reconnected, remove them
             lobby
                 .remove_player(&player_id, Some(PrivateServerEvent::Timeout))
@@ -496,7 +573,8 @@ impl Lobby {
 
     /// Sleep according to settings.wait_time_secs
     async fn wait_time_secs(&self) {
-        if let Some(secs) = self.state.read().await.settings.wait_time_secs {
+        let wait_time_secs = self.state.read().await.settings.wait_time_secs;
+        if let Some(secs) = wait_time_secs {
             sleep(Duration::from_secs(secs)).await;
         }
     }
@@ -505,7 +583,7 @@ impl Lobby {
     async fn assign_czar(&self) -> Result<()> {
         let next = {
             let mut guard = self.state.write().await;
-            guard.czar_order.pop_front()
+            guard.czar_order.pop_back()
         };
 
         if let Some(player_id) = next {
@@ -532,7 +610,7 @@ impl Lobby {
             // re-queue
             {
                 let mut guard = self.state.write().await;
-                guard.czar_order.push_back(player_id);
+                guard.czar_order.push_front(player_id);
             }
         }
         Ok(())
@@ -568,8 +646,8 @@ impl Lobby {
         // now shuffle the submission array
         {
             let mut guard = self.state.write().await;
-            let mut rng = rng();
-            guard.submissions.shuffle(&mut rng);
+            let mut rng = rand::rng();
+            guard.submissions.shuffle_together(&mut rng);
         }
     }
 
@@ -577,7 +655,7 @@ impl Lobby {
     async fn judging(&self) {
         let cards = {
             let guard = self.state.read().await;
-            guard.submissions.iter().map(|(_, c)| c.clone()).collect()
+            guard.submissions.reveal.clone()
         };
 
         self.set_phase_and_emit(
@@ -617,21 +695,21 @@ impl Lobby {
             guard.czar_pick
         };
         if let Some(index) = czar_pick {
-            if let Some(player_id) = {
-                let mut guard = self.state.write().await;
-                if let Some((player_id, _)) = guard.submissions.get(index).cloned() {
-                    if let Some(p) = guard.players.get_mut(&player_id) {
+            if let Some(winner_id) = {
+                let guard = self.state.read().await;
+                guard.submissions.by_index.get(index).copied()
+            } {
+                {
+                    let mut guard = self.state.write().await;
+                    if let Some(p) = guard.players.get_mut(&winner_id) {
                         p.info.points += 1;
                     }
-                    Some(player_id)
-                } else {
-                    None
                 }
-            } {
+
                 self.set_phase_and_emit(
                     GamePhase::RoundFinished,
                     ServerEvent::RoundResult {
-                        player_id,
+                        player_id: winner_id,
                         winning_card_index: index,
                     },
                 )
@@ -730,8 +808,8 @@ impl Lobby {
                 .get_mut(player_id)
                 .ok_or(Error::CardSubmission)?;
 
-            // get selected cards
-            let mut cards = Vec::new();
+            // collect selected cards
+            let mut cards = Vec::with_capacity(indexes.len());
             for index in &indexes {
                 if let Some(white_card) = player.cards.get(*index).cloned() {
                     cards.push(white_card);
@@ -740,17 +818,19 @@ impl Lobby {
                 }
             }
 
-            // remove selected indexes
+            // remove selected indexes from hand
             player.cards = player
                 .cards
-                .iter() // &Card
-                .enumerate() // (usize, &Card)
-                .filter(|&(i, _)| !indexes.contains(&i)) // keep those NOT in `indexes`
-                .map(|(_, card)| card.clone()) // clone the Card out
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| !indexes.contains(i))
+                .map(|(_, c)| c.clone())
                 .collect();
 
-            guard.submissions.push((*player_id, cards));
-        };
+            // save into submissions (kept aligned)
+            guard.submissions.reveal.push(cards);
+            guard.submissions.by_index.push(*player_id);
+        }
 
         self.submission_notify.notify_one();
         self.emit_global(ServerEvent::CardsSubmitted {
@@ -856,7 +936,7 @@ impl Lobby {
 
     pub async fn has_submitted(&self, player_id: &Uuid) -> bool {
         let guard = self.state.read().await;
-        guard.submissions.iter().any(|(id, _)| id == player_id)
+        guard.submissions.by_index.iter().any(|id| id == player_id)
     }
 
     pub async fn czar_submitted(&self) -> bool {
@@ -866,6 +946,6 @@ impl Lobby {
 
     pub async fn all_player_submitted(&self) -> bool {
         let guard = self.state.read().await;
-        guard.submissions.len() == guard.players.len() - 1
+        guard.submissions.len() == guard.players.len().saturating_sub(1)
     }
 }

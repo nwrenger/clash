@@ -56,6 +56,7 @@
 				placeholder="Enter your nickname…"
 				bind:value={name}
 				disabled={creating}
+				onkeydown={(e) => e.key === 'Enter' && createLobby()}
 			/>
 		</label>
 	</div>
@@ -66,10 +67,10 @@
 		onclick={createLobby}
 	>
 		{#if creating}
-			<LoaderCircle class="animate-spin" />
+			<LoaderCircle size={22} class="animate-spin" />
 			Creating...
 		{:else}
-			<Plus />
+			<Plus size={22} />
 			Create Lobby
 		{/if}
 	</button>

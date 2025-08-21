@@ -79,10 +79,17 @@ namespace api {
 		points: number;
 	}
 
-	export interface LobbyState {
+	export interface ClientLobby {
 		players: Record<Uuid, PlayerInfo>;
 		settings: Settings;
 		phase: GamePhase;
+		round: number;
+		hand?: WhiteCard[];
+		revealed_cards?: api.WhiteCard[][];
+		submitted_players?: Uuid[];
+		czar_pick?: number;
+		winner?: Uuid;
+		black_card?: BlackCard;
 	}
 
 	export type GamePhase = 'LobbyOpen' | 'Submitting' | 'Judging' | 'RoundFinished' | 'GameOver';
@@ -114,8 +121,8 @@ namespace api {
 
 	export type PrivateServerEvent =
 		| {
-				type: 'LobbyState';
-				data: LobbyState;
+				type: 'ClientLobby';
+				data: ClientLobby;
 		  }
 		| { type: 'UpdateHand'; data: { cards: WhiteCard[] } }
 		| { type: 'Timeout' }

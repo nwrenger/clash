@@ -18,6 +18,7 @@
 				type="text"
 				placeholder="Enter your nickname…"
 				bind:value={own_name}
+				onkeydown={(e) => e.key === 'Enter' && join_lobby()}
 			/>
 		</label>
 	</div>

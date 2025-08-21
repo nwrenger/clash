@@ -1,20 +1,19 @@
 <script lang="ts">
-	import clickToCopy from '$lib/clickToCopy';
 	import type { Snippet } from 'svelte';
 
 	interface Props {
-		text: string | (() => string);
+		url: string;
 		child: Snippet<[{ copied: boolean }]>;
 		[key: string]: any;
 	}
 
-	let { text, child, ...restProps }: Props = $props();
+	let { url, child, ...restProps }: Props = $props();
 
 	let copyTimer: number | null = null;
 	let copied = $state(false);
 
 	$effect(() => {
-		if (text) {
+		if (url) {
 			clearCopyTimer();
 			copied = false;
 		}
@@ -22,7 +21,6 @@
 
 	function handleCopyDone() {
 		clearCopyTimer();
-
 		copied = true;
 		copyTimer = setTimeout(() => {
 			copied = false;
@@ -39,13 +37,17 @@
 	function handleCopyError() {
 		console.error('Error copying.');
 	}
+
+	async function handleAction() {
+		try {
+			await navigator.clipboard.writeText(url);
+			handleCopyDone();
+		} catch {
+			handleCopyError();
+		}
+	}
 </script>
 
-<button
-	use:clickToCopy={{ text }}
-	oncopyDone={handleCopyDone}
-	oncopyError={handleCopyError}
-	{...restProps}
->
+<button onclick={handleAction} {...restProps}>
 	{@render child({ copied })}
 </button>

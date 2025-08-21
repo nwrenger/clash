@@ -81,8 +81,8 @@ pub enum ServerEvent {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(tag = "type", content = "data")]
 pub enum PrivateServerEvent {
-    /// New state of the lobby
-    LobbyState(LobbyState),
+    /// Client lobby state
+    ClientLobby(ClientLobby),
     /// Updates a player's hand (e.g., after submission or round start)
     UpdateHand { cards: Vec<WhiteCard> },
     /// A Player times out
@@ -94,10 +94,23 @@ pub enum PrivateServerEvent {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct LobbyState {
+pub struct ClientLobby {
     players: HashMap<Uuid, PlayerInfo>,
     settings: Settings,
     phase: GamePhase,
+    round: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    hand: Option<Vec<WhiteCard>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    revealed_cards: Vec<Vec<WhiteCard>>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    submitted_players: Vec<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    czar_pick: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    winner: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    black_card: Option<BlackCard>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

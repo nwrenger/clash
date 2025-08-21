@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Countdown from '$lib/components/Countdown.svelte';
 	import { sortedEntries } from '$lib/utils';
-	import { Crown } from 'lucide-svelte';
+	import { Gavel } from 'lucide-svelte';
 	import type { Lobby, Own, Round } from './+page.svelte';
 
 	interface Props {
@@ -15,19 +15,18 @@
 
 <div class="grid w-full grid-cols-[1fr_auto]">
 	<div class="flex max-w-full gap-2 overflow-x-auto px-2 py-1">
-		{#each sortedEntries(lobby.state?.players) as [id, player]}
+		{#each sortedEntries(lobby?.players) as [id, player]}
 			<span
-				class="card {id === own.id ? 'preset-filled-tertiary-500' : 'preset-filled'} {round.result
-					?.player_id === id
+				class="card preset-filled {round.result?.player_id === id
 					? 'outline-primary-500 outline-2 outline-offset-2'
 					: ''} pointer-events-none px-4 py-2"
 			>
 				<span class="flex h-full w-full flex-col items-center justify-center">
-					<span class="flex items-center space-x-1.5">
-						{#if player.is_host}
-							<Crown size={16} />
+					<span class="flex items-center space-x-1.5 {id === own.id ? 'text-primary-500' : ''}">
+						<span class="font-bold text-nowrap">{player.name}</span>
+						{#if player.is_czar}
+							<Gavel size={16} strokeWidth={2.25} />
 						{/if}
-						<span class="text-nowrap">{player.name}</span>
 					</span>
 					<span>
 						{player.points}

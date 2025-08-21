@@ -28,11 +28,11 @@
 
 	// Top three players for podium
 	const topThree = () =>
-		sortedEntries(lobby.state?.players)
+		sortedEntries(lobby?.players)
 			.toSorted((a, b) => b[1].points - a[1].points)
 			.slice(0, 3);
 	const others = () =>
-		sortedEntries(lobby.state?.players)
+		sortedEntries(lobby?.players)
 			.toSorted((a, b) => b[1].points - a[1].points)
 			.slice(3);
 </script>
@@ -51,18 +51,21 @@
 							? 'bg-gradient-to-br from-yellow-300 to-yellow-600 text-white'
 							: idx === 1
 								? 'bg-gradient-to-br from-gray-300 to-gray-500 text-gray-900'
-								: 'bg-gradient-to-br from-amber-600 to-orange-800 text-white'} flex w-20 flex-col items-center justify-center space-y-1 rounded-t-2xl py-4 shadow-lg sm:w-32 {id ===
-						own.id
-							? 'outline-secondary-500 outline-2 outline-offset-2'
-							: ''}"
+								: 'bg-gradient-to-br from-amber-600 to-orange-800 text-white'} flex w-20 flex-col items-center justify-center space-y-1 rounded-t-2xl py-4 shadow-lg sm:w-32"
 						style="height: {idx === 0 ? '200px' : idx === 1 ? '160px' : '140px'}"
 					>
 						{#if idx === 0}
 							<Trophy size={32} />
 						{/if}
-						<div class="flex w-16 items-center justify-center space-x-1.5 sm:w-20">
+						<div
+							class="flex w-16 items-center justify-center space-x-1.5 sm:w-20 {id === own.id
+								? 'text-primary-500'
+								: ''}"
+						>
 							{#if player.is_host}
-								<Crown size={16} />
+								<div class="w-5">
+									<Crown size={20} strokeWidth={2.5} />
+								</div>
 							{/if}
 							<span class="truncate text-xl font-semibold" title={player.name}>{player.name}</span>
 						</div>
@@ -81,14 +84,16 @@
 	{#if others().length}
 		<div class="space-y-2 px-4 pt-4 sm:px-16">
 			{#each others() as [id, player]}
-				<div
-					class="preset-filled grid w-full grid-cols-[1fr_auto] rounded-lg px-5 py-3 shadow-md
-					{id === own.id ? 'outline-secondary-500 outline-2 outline-offset-2' : ''}"
-				>
-					<div class="flex w-full max-w-full min-w-0 flex-1 items-center justify-start space-x-1.5">
-						<div class="w-4">
+				<div class="preset-filled grid w-full grid-cols-[1fr_auto] rounded-lg px-5 py-3 shadow-md">
+					<div
+						class="flex w-full max-w-full min-w-0 flex-1 items-center justify-start space-x-1.5 {id ===
+						own.id
+							? 'text-primary-500'
+							: ''}"
+					>
+						<div class="w-5">
 							{#if player.is_host}
-								<Crown size={16} />
+								<Crown size={20} strokeWidth={2.5} />
 							{/if}
 						</div>
 						<span class="truncate text-xl font-semibold" title={player.name}>{player.name}</span>
@@ -99,7 +104,7 @@
 		</div>
 	{/if}
 
-	{#if lobby.state?.players[own.id]?.is_host}
+	{#if lobby!.players![own.id]?.is_host}
 		<button class="btn preset-filled-primary-500" onclick={reset_game}> Restart Game </button>
 	{/if}
 </div>
