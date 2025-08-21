@@ -315,13 +315,14 @@
 
 		round.count = msg.data.round;
 		round.black_card = msg.data.black_card;
-		round.revealed_cards = msg.data.revealed_cards || [];
+		if (msg.data.revealed_cards) round.revealed_cards = msg.data.revealed_cards;
 		if (msg.data.czar_pick != null) round.result = { winning_card_index: msg.data.czar_pick };
 		if (msg.data.winner != null) round.result = { player_id: msg.data.winner, ...round.result };
 
-		for (const submit_id of msg.data.submitted_players || []) {
-			onCardsSubmitted({ type: 'CardsSubmitted', data: { player_id: submit_id } });
-		}
+		if (msg.data.submitted_players)
+			for (const submit_id of msg.data.submitted_players) {
+				onCardsSubmitted({ type: 'CardsSubmitted', data: { player_id: submit_id } });
+			}
 
 		if (msg.data.selected_cards) own.selected_cards = msg.data.selected_cards;
 		if (msg.data.hand) own.cards = msg.data.hand;
