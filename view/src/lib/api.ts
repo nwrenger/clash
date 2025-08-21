@@ -87,6 +87,7 @@ namespace api {
 		hand?: WhiteCard[];
 		revealed_cards?: api.WhiteCard[][];
 		submitted_players?: Uuid[];
+		selected_cards?: number[];
 		czar_pick?: number;
 		winner?: Uuid;
 		black_card?: BlackCard;

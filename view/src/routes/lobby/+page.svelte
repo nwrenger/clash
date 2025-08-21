@@ -321,11 +321,9 @@
 
 		for (const submit_id of msg.data.submitted_players || []) {
 			onCardsSubmitted({ type: 'CardsSubmitted', data: { player_id: submit_id } });
-			if (submit_id == own.id && round.black_card) {
-				own.selected_cards = Array(round.black_card.fields).fill(-1);
-			}
 		}
 
+		if (msg.data.selected_cards) own.selected_cards = msg.data.selected_cards;
 		if (msg.data.hand) own.cards = msg.data.hand;
 	}
 

@@ -2,7 +2,7 @@ use dashmap::DashMap;
 use rand::seq::SliceRandom;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{HashMap, HashSet, VecDeque},
     future::Future,
     path::PathBuf,
     sync::Arc,
@@ -35,12 +35,15 @@ pub struct Submissions {
     pub reveal: Vec<Vec<WhiteCard>>,
     /// For the same index in `reveal`, which player submitted them
     pub by_index: Vec<Uuid>,
+    /// Per-player submitted indexes (indexes into their current hand at submit-time)
+    pub submitted_by_player: HashMap<Uuid, Vec<usize>>,
 }
 
 impl Submissions {
     pub fn clear(&mut self) {
         self.reveal.clear();
         self.by_index.clear();
+        self.submitted_by_player.clear();
     }
 
     pub fn len(&self) -> usize {
@@ -114,6 +117,19 @@ impl LobbyData {
             vec![]
         };
 
+        let selected_cards = if matches!(
+            self.phase,
+            GamePhase::Submitting | GamePhase::Judging | GamePhase::RoundFinished
+        ) {
+            self.submissions
+                .submitted_by_player
+                .get(player_id)
+                .cloned()
+                .unwrap_or_default()
+        } else {
+            vec![]
+        };
+
         let winner = if let Some(index) = self.czar_pick {
             self.submissions.by_index.get(index).copied()
         } else {
@@ -134,6 +150,7 @@ impl LobbyData {
             hand,
             revealed_cards,
             submitted_players,
+            selected_cards,
             czar_pick: self.czar_pick,
             winner,
             black_card,
@@ -564,6 +581,23 @@ impl Lobby {
     async fn reset_round(&self) -> Result<()> {
         {
             let mut guard = self.state.write().await;
+
+            // Remove player cards (from the submitted_by_player map)
+            for (id, indexes) in guard.submissions.submitted_by_player.clone() {
+                if let Some(p) = guard.players.get_mut(&id) {
+                    // Use a set to avoid O(n*m)
+                    let to_remove: HashSet<usize> = indexes.iter().copied().collect();
+                    p.cards = p
+                        .cards
+                        .iter()
+                        .enumerate()
+                        .filter(|(i, _)| !to_remove.contains(i))
+                        .map(|(_, c)| c.clone())
+                        .collect();
+                }
+            }
+
+            // Clear everything
             guard.submissions.clear();
             guard.czar_pick = None;
             guard.black_card = None;
@@ -821,18 +855,15 @@ impl Lobby {
                 }
             }
 
-            // remove selected indexes from hand
-            player.cards = player
-                .cards
-                .iter()
-                .enumerate()
-                .filter(|(i, _)| !indexes.contains(i))
-                .map(|(_, c)| c.clone())
-                .collect();
-
             // save into submissions (kept aligned)
             guard.submissions.reveal.push(cards);
             guard.submissions.by_index.push(*player_id);
+
+            // save as submitted by a player
+            guard
+                .submissions
+                .submitted_by_player
+                .insert(*player_id, indexes.clone());
         }
 
         self.submission_notify.notify_one();

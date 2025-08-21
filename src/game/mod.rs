@@ -105,6 +105,8 @@ pub struct ClientLobby {
     revealed_cards: Vec<Vec<WhiteCard>>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     submitted_players: Vec<Uuid>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    selected_cards: Vec<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     czar_pick: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
