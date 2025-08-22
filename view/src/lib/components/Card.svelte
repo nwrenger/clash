@@ -26,7 +26,7 @@
 		{:else}
 			{@const text = card.text.replaceAll('\n', '<br/>')}
 			<span
-				class="{text_classes} {card.text.length > 100
+				class="{text_classes} {card.text.length > 95
 					? 'text-xs'
 					: 'text-sm'} text-sm font-bold break-normal"
 			>

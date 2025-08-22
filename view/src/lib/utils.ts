@@ -66,21 +66,22 @@ export function sortedEntries<K extends string, V extends api.PlayerInfo>(
 }
 
 /**
- * Deterministic colors from UUIDs
- * - Uses FNV-1a (32-bit) to hash the UUID
- * - Maps hash -> HSL for stable, vibrant backgrounds
- * - Picks #000 or #fff text for best contrast
+ * Deterministic, perceptually balanced colors from UUIDs (OKLCH, no deps)
+ * - Hash (FNV-1a 32-bit) → hue
+ * - Fixed L,C in OKLCH for even-looking colors across hues
+ * - Gamut-fit: scales chroma down until sRGB-safe
+ * - WCAG contrast pick for text (#000 / #fff)
  */
-export function colorFromUUID(uuid: api.Uuid) {
-	const hash = fnv1a(uuid);
+export function colorFromUUID(uuid: string) {
+	const h = ((fnv1a(uuid) % 360) + 360) % 360; // 0..359
+	const L = 0.8; // perceptual lightness (0..1)
+	let C = 0.12; // perceptual chroma (start; will be reduced if out-of-gamut)
 
-	// Map hash -> HSL (keep S/L in friendly ranges)
-	const h = hash % 360; // 0..359
-	const s = 60 + ((hash >>> 1) % 20); // 60..79%
-	const l = 45 + ((hash >>> 3) % 20); // 45..64%
+	// Optional: tiny hue-based chroma trim to avoid common clip zones (purples/blues)
+	C *= 0.98 - 0.04 * Math.cos(((h - 305) * Math.PI) / 180);
 
-	const { r, g, b } = hslToRgb(h, s / 100, l / 100);
-	const bgHex = rgbToHex(r, g, b);
+	const { r, g, b } = oklchToSRGBGamutFit(L, C, h);
+	const bgHex = rgbToHex(Math.round(r * 255), Math.round(g * 255), Math.round(b * 255));
 
 	// Choose readable text color
 	// This is always given with white color
@@ -89,44 +90,74 @@ export function colorFromUUID(uuid: api.Uuid) {
 	return { background: bgHex, text: textHex };
 }
 
-export function textColorFromUUID(uuid: api.Uuid) {
-	return colorFromUUID(uuid).text;
-}
-
-function fnv1a(str: api.Uuid) {
-	// 32-bit FNV-1a hash
-	let hash = 0x811c9dc5;
+function fnv1a(str: string) {
+	let hash = 0x811c9dc5 >>> 0;
 	for (let i = 0; i < str.length; i++) {
 		hash ^= str.charCodeAt(i);
 		hash = Math.imul(hash, 0x01000193);
 	}
-	return hash >>> 0; // unsigned
+	return hash >>> 0;
 }
 
-function hslToRgb(h: number, s: number, l: number) {
-	const c = (1 - Math.abs(2 * l - 1)) * s;
-	const hp = h / 60;
-	const x = c * (1 - Math.abs((hp % 2) - 1));
-	let r1 = 0,
-		g1 = 0,
-		b1 = 0;
+function oklchToSRGBGamutFit(L: number, C: number, hDeg: number) {
+	// First try full chroma
+	let rgb = oklchToSRGB(L, C, hDeg);
+	if (inSRGB(rgb)) return rgb;
 
-	if (0 <= hp && hp < 1) [r1, g1, b1] = [c, x, 0];
-	else if (1 <= hp && hp < 2) [r1, g1, b1] = [x, c, 0];
-	else if (2 <= hp && hp < 3) [r1, g1, b1] = [0, c, x];
-	else if (3 <= hp && hp < 4) [r1, g1, b1] = [0, x, c];
-	else if (4 <= hp && hp < 5) [r1, g1, b1] = [x, 0, c];
-	else if (5 <= hp && hp < 6) [r1, g1, b1] = [c, 0, x];
+	// Binary search chroma scale in [0, 1]
+	let lo = 0,
+		hi = 1;
+	for (let i = 0; i < 18; i++) {
+		const mid = (lo + hi) / 2;
+		rgb = oklchToSRGB(L, C * mid, hDeg);
+		if (inSRGB(rgb)) lo = mid;
+		else hi = mid;
+	}
+	return oklchToSRGB(L, C * lo, hDeg);
+}
 
-	const m = l - c / 2;
-	return {
-		r: Math.round((r1 + m) * 255),
-		g: Math.round((g1 + m) * 255),
-		b: Math.round((b1 + m) * 255)
-	};
+function oklchToSRGB(L: number, C: number, hDeg: number) {
+	const h = (hDeg * Math.PI) / 180;
+	const a = C * Math.cos(h);
+	const b = C * Math.sin(h);
+	return oklabToSRGB(L, a, b);
+}
+
+function oklabToSRGB(L: number, a: number, b: number) {
+	// Oklab → LMS'
+	const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+	const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+	const s_ = L - 0.0894841775 * a - 1.291485548 * b;
+
+	// Cube to LMS
+	const l = l_ * l_ * l_;
+	const m = m_ * m_ * m_;
+	const s = s_ * s_ * s_;
+
+	// LMS → linear sRGB
+	let r = +4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s;
+	let g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s;
+	let b2 = -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s;
+
+	// Linear → gamma-encoded sRGB
+	r = compandSRGB(r);
+	g = compandSRGB(g);
+	b2 = compandSRGB(b2);
+
+	return { r, g, b: b2 };
+}
+
+function compandSRGB(u: number) {
+	// clamp linear to a safe range before gamma
+	if (u <= 0.0031308) return 12.92 * Math.max(0, u);
+	return 1.055 * Math.pow(Math.max(0, u), 1 / 2.4) - 0.055;
+}
+
+function inSRGB({ r, g, b }: { r: number; g: number; b: number }) {
+	return r >= 0 && r <= 1 && g >= 0 && g <= 1 && b >= 0 && b <= 1;
 }
 
 function rgbToHex(r: number, g: number, b: number) {
-	const toHex = (n: number) => n.toString(16).padStart(2, '0');
-	return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+	const h = (n: number) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, '0');
+	return `#${h(r)}${h(g)}${h(b)}`;
 }

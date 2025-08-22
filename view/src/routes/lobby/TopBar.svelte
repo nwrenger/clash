@@ -10,6 +10,13 @@
 		round: Round;
 	}
 
+	$effect(() => {
+		if (round.result?.player_id) {
+			let el = document.getElementById(`points-${round.result.player_id}`);
+			el?.scrollIntoView({ inline: 'center', behavior: 'smooth' });
+		}
+	});
+
 	let { lobby, own, round }: Props = $props();
 </script>
 
@@ -17,6 +24,7 @@
 	<div class="flex max-w-full gap-2 overflow-x-auto px-2 py-1">
 		{#each sortedEntries(lobby?.players) as [id, player]}
 			<span
+				id="points-{id}"
 				class="card preset-filled {round.result?.player_id === id
 					? 'outline-primary-500 outline-2 outline-offset-2'
 					: ''} pointer-events-none px-4 py-2"
@@ -35,7 +43,9 @@
 						</div>
 						<span class="font-semibold text-nowrap">{player.name}</span>
 						{#if player.is_czar}
-							<Gavel class="text-surface-50-950 animate-pulse" size={20} strokeWidth={2.25} />
+							<div class="sprite is-falling">
+								<Gavel class="text-surface-50-950" size={20} strokeWidth={2.25} />
+							</div>
 						{/if}
 					</span>
 					<span>
@@ -57,3 +67,51 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	.sprite {
+		--fall-tilt: 45deg;
+		--cycle: 2s;
+		--fall-x: -5px;
+		--fall-y: 0px;
+		--slam-squash: 0.88;
+		--slam-stretch: 1.06;
+		display: inline-block;
+		transform-origin: 50% 100%;
+		will-change: transform;
+	}
+
+	.is-falling {
+		animation: fall-impact-rise var(--cycle) infinite;
+	}
+
+	@keyframes fall-impact-rise {
+		0% {
+			transform: translate(0, 0) rotate(0deg) scale(1, 1);
+			animation-timing-function: cubic-bezier(0.15, 1, 0.3, 1);
+			filter: none;
+		}
+		12% {
+			filter: saturate(1.08) contrast(1.03);
+			transform: translate(var(--fall-x), var(--fall-y))
+				scale(var(--slam-stretch), var(--slam-squash)) rotate(var(--fall-tilt));
+			animation-timing-function: cubic-bezier(0.2, 1, 0.3, 1);
+		}
+		14% {
+			filter: saturate(1.08) contrast(1.03);
+			transform: translate(var(--fall-x), var(--fall-y)) scale(1, 1) rotate(var(--fall-tilt));
+			animation-timing-function: cubic-bezier(0.1, 0.4, 0, 1);
+		}
+		100% {
+			transform: translate(0, 0) rotate(0deg) scale(1, 1);
+			filter: none;
+		}
+	}
+
+	/* a11y */
+	@media (prefers-reduced-motion: reduce) {
+		.is-falling {
+			animation: none;
+		}
+	}
+</style>

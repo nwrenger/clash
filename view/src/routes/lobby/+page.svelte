@@ -384,6 +384,9 @@
 
 	function disconnect() {
 		lobby.joined = false;
+		lobby.phase = undefined;
+		lobby.players = undefined;
+		lobby.settings = undefined;
 		connection.connected = false;
 	}
 
