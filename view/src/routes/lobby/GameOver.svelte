@@ -1,8 +1,8 @@
 <script lang="ts">
 	import confetti from 'canvas-confetti';
 	import api from '$lib/api';
-	import { sortedEntries } from '$lib/utils';
-	import { Crown, Trophy } from 'lucide-svelte';
+	import { colorFromUUID, sortedEntries } from '$lib/utils';
+	import { Crown, Trophy, UserRound } from 'lucide-svelte';
 	import type { Connection, Lobby, Own } from './+page.svelte';
 
 	interface Props {
@@ -62,11 +62,16 @@
 								? 'text-primary-500'
 								: ''}"
 						>
-							{#if player.is_host}
-								<div class="w-5">
-									<Crown size={20} strokeWidth={2.5} />
-								</div>
-							{/if}
+							<div
+								class="w-7 rounded-sm p-1"
+								style="background-color: {colorFromUUID(id).background};"
+							>
+								{#if player.is_host}
+									<Crown color={colorFromUUID(id).text} size={20} strokeWidth={2.5} />
+								{:else}
+									<UserRound color={colorFromUUID(id).text} size={20} strokeWidth={2.5} />
+								{/if}
+							</div>
 							<span class="truncate text-xl font-semibold" title={player.name}>{player.name}</span>
 						</div>
 						<span class="hidden text-2xl sm:block">{player.points} pts</span>
@@ -91,9 +96,14 @@
 							? 'text-primary-500'
 							: ''}"
 					>
-						<div class="w-5">
+						<div
+							class="w-7 rounded-sm p-1"
+							style="background-color: {colorFromUUID(id).background};"
+						>
 							{#if player.is_host}
-								<Crown size={20} strokeWidth={2.5} />
+								<Crown color={colorFromUUID(id).text} size={20} strokeWidth={2.5} />
+							{:else}
+								<UserRound color={colorFromUUID(id).text} size={20} strokeWidth={2.5} />
 							{/if}
 						</div>
 						<span class="truncate text-xl font-semibold" title={player.name}>{player.name}</span>

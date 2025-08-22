@@ -64,3 +64,69 @@ export function sortedEntries<K extends string, V extends api.PlayerInfo>(
 		}
 	});
 }
+
+/**
+ * Deterministic colors from UUIDs
+ * - Uses FNV-1a (32-bit) to hash the UUID
+ * - Maps hash -> HSL for stable, vibrant backgrounds
+ * - Picks #000 or #fff text for best contrast
+ */
+export function colorFromUUID(uuid: api.Uuid) {
+	const hash = fnv1a(uuid);
+
+	// Map hash -> HSL (keep S/L in friendly ranges)
+	const h = hash % 360; // 0..359
+	const s = 60 + ((hash >>> 1) % 20); // 60..79%
+	const l = 45 + ((hash >>> 3) % 20); // 45..64%
+
+	const { r, g, b } = hslToRgb(h, s / 100, l / 100);
+	const bgHex = rgbToHex(r, g, b);
+
+	// Choose readable text color
+	// This is always given with white color
+	const textHex = '#ffffff';
+
+	return { background: bgHex, text: textHex };
+}
+
+export function textColorFromUUID(uuid: api.Uuid) {
+	return colorFromUUID(uuid).text;
+}
+
+function fnv1a(str: api.Uuid) {
+	// 32-bit FNV-1a hash
+	let hash = 0x811c9dc5;
+	for (let i = 0; i < str.length; i++) {
+		hash ^= str.charCodeAt(i);
+		hash = Math.imul(hash, 0x01000193);
+	}
+	return hash >>> 0; // unsigned
+}
+
+function hslToRgb(h: number, s: number, l: number) {
+	const c = (1 - Math.abs(2 * l - 1)) * s;
+	const hp = h / 60;
+	const x = c * (1 - Math.abs((hp % 2) - 1));
+	let r1 = 0,
+		g1 = 0,
+		b1 = 0;
+
+	if (0 <= hp && hp < 1) [r1, g1, b1] = [c, x, 0];
+	else if (1 <= hp && hp < 2) [r1, g1, b1] = [x, c, 0];
+	else if (2 <= hp && hp < 3) [r1, g1, b1] = [0, c, x];
+	else if (3 <= hp && hp < 4) [r1, g1, b1] = [0, x, c];
+	else if (4 <= hp && hp < 5) [r1, g1, b1] = [x, 0, c];
+	else if (5 <= hp && hp < 6) [r1, g1, b1] = [c, 0, x];
+
+	const m = l - c / 2;
+	return {
+		r: Math.round((r1 + m) * 255),
+		g: Math.round((g1 + m) * 255),
+		b: Math.round((b1 + m) * 255)
+	};
+}
+
+function rgbToHex(r: number, g: number, b: number) {
+	const toHex = (n: number) => n.toString(16).padStart(2, '0');
+	return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}

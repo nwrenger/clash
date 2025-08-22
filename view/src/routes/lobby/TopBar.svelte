@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Countdown from '$lib/components/Countdown.svelte';
-	import { sortedEntries } from '$lib/utils';
-	import { Gavel } from 'lucide-svelte';
+	import { colorFromUUID, sortedEntries } from '$lib/utils';
+	import { Crown, Gavel, UserRound } from 'lucide-svelte';
 	import type { Lobby, Own, Round } from './+page.svelte';
 
 	interface Props {
@@ -23,9 +23,19 @@
 			>
 				<span class="flex h-full w-full flex-col items-center justify-center">
 					<span class="flex items-center space-x-1.5 {id === own.id ? 'text-primary-500' : ''}">
-						<span class="font-bold text-nowrap">{player.name}</span>
+						<div
+							class="w-7 rounded-sm p-1"
+							style="background-color: {colorFromUUID(id).background};"
+						>
+							{#if player.is_host}
+								<Crown color={colorFromUUID(id).text} size={20} strokeWidth={2.5} />
+							{:else}
+								<UserRound color={colorFromUUID(id).text} size={20} strokeWidth={2.5} />
+							{/if}
+						</div>
+						<span class="font-semibold text-nowrap">{player.name}</span>
 						{#if player.is_czar}
-							<Gavel size={16} strokeWidth={2.25} />
+							<Gavel class="text-surface-50-950 animate-pulse" size={20} strokeWidth={2.25} />
 						{/if}
 					</span>
 					<span>
