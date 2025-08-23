@@ -209,7 +209,7 @@ impl Lobby {
             guard.settings = Settings::default();
             let all_decks = Deck::get_all_cached_info(&cache, None).await?;
             guard.settings.decks = all_decks;
-            guard.round = 1;
+            guard.round = 0;
             guard.phase = GamePhase::LobbyOpen;
             let host_player = Player {
                 info: PlayerInfo {
@@ -546,6 +546,8 @@ impl Lobby {
         self.reset_round().await?;
 
         loop {
+            self.increment_round().await;
+
             self.assign_czar().await?;
             self.submitting().await;
 
@@ -559,11 +561,9 @@ impl Lobby {
             // wait the normal time
             self.wait_time_secs().await;
 
-            self.increment_round().await;
-
             let done = {
                 let guard = self.state.read().await;
-                guard.round > guard.settings.max_rounds
+                guard.round >= guard.settings.max_rounds
             };
             if done {
                 break;
@@ -911,7 +911,7 @@ impl Lobby {
     pub async fn reset_game(&self, player_id: &Uuid) -> Result<()> {
         if self.is_host(player_id).await && self.has_phase(GamePhase::GameOver).await {
             let mut guard = self.state.write().await;
-            guard.round = 1;
+            guard.round = 0;
             guard.phase = GamePhase::LobbyOpen;
             for p in guard.players.values_mut() {
                 p.info.is_czar = false;
