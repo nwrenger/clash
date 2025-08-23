@@ -18,7 +18,7 @@
 	open={openState}
 	onclick={(e) => e.stopPropagation()}
 	onOpenChange={(e) => (openState = e.open)}
-	triggerBase="btn-icon preset-filled absolute top-1 left-1 z-[100]"
+	triggerBase="btn-icon bg-surface-950 text-surface-50 absolute top-1 left-1 z-[100]"
 	contentBase="p-0 relative rounded-md max-w-[90vw] max-h-[90vh] overflow-auto"
 	backdropClasses="backdrop-blur-sm"
 >
@@ -34,7 +34,7 @@
 		/>
 		<button
 			type="button"
-			class="btn-icon preset-filled absolute top-1 right-1"
+			class="btn-icon bg-surface-950 text-surface-50 absolute top-1 right-1"
 			onclick={modalClose}
 		>
 			<X />
