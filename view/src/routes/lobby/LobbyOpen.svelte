@@ -136,7 +136,7 @@
 		fluid
 		composite
 		classes="h-full"
-		contentClasses="h-[calc(100%-70px)]"
+		contentClasses="h-[calc(100%-61px)]"
 		listClasses="preset-tonal backdrop-blur-lg pt-2 px-2 !mb-0 rounded-md whitespace-nowrap"
 	>
 		{#snippet list()}
