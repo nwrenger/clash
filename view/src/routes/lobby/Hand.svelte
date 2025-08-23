@@ -50,7 +50,7 @@
 						? 'z-20 -translate-y-4 scale-120'
 						: 'hover:-translate-y-2 hover:scale-110'}
 						bg-surface-50 ml-[-18px] first:ml-0 hover:-rotate-2
-						{disabled ? 'brightness-60 cursor-default' : ''}"
+						{disabled ? 'brightness-60 !cursor-default' : ''}"
 					text_classes="text-surface-950"
 					onclick={() => selectCard(index)}
 				/>
