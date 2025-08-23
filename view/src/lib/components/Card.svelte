@@ -35,7 +35,7 @@
 			<span
 				class="{text_classes} {card.text.length > 95
 					? 'text-xs'
-					: 'text-sm'} text-sm font-bold break-normal"
+					: 'text-sm'} text-center text-sm font-bold break-normal"
 			>
 				{@html text}
 			</span>
