@@ -189,9 +189,7 @@
 						{/each}
 					</div>
 
-					<div
-						class="sticky bottom-0 z-50 flex w-full flex-col items-center justify-center space-y-2"
-					>
+					<div class="sticky bottom-0 z-50 flex w-full flex-col items-center justify-center">
 						<div
 							class="preset-tonal grid w-full gap-1.5 rounded-md p-2 backdrop-blur-lg {is_host
 								? 'sm:grid-cols-2'
