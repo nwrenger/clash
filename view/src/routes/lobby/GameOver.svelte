@@ -51,14 +51,14 @@
 							? 'bg-gradient-to-br from-yellow-300 to-yellow-600 text-white'
 							: idx === 1
 								? 'bg-gradient-to-br from-gray-300 to-gray-500 text-gray-900'
-								: 'bg-gradient-to-br from-amber-600 to-orange-800 text-white'} flex w-20 flex-col items-center justify-center space-y-1 rounded-t-2xl py-4 shadow-lg sm:w-32"
+								: 'bg-gradient-to-br from-amber-600 to-orange-800 text-white'} flex w-20 flex-col items-center justify-center space-y-1 rounded-t-2xl py-4 shadow-lg sm:w-32 md:w-44"
 						style="height: {idx === 0 ? '200px' : idx === 1 ? '160px' : '140px'}"
 					>
 						{#if idx === 0}
 							<Trophy size={32} />
 						{/if}
 						<div
-							class="flex w-16 items-center justify-center space-x-1.5 sm:w-20 {id === own.id
+							class="flex w-full items-center justify-center space-x-1.5 {id === own.id
 								? 'text-primary-500'
 								: ''}"
 						>

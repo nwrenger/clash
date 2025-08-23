@@ -190,9 +190,13 @@
 					</div>
 
 					<div
-						class="sticky bottom-0 z-50 flex w-full flex-col items-center justify-center space-y-2 px-2 pt-2"
+						class="sticky bottom-0 z-50 flex w-full flex-col items-center justify-center space-y-2"
 					>
-						<div class="grid w-full gap-1.5 {is_host ? 'sm:grid-cols-2' : 'sm:w-auto'}">
+						<div
+							class="preset-tonal grid w-full gap-1.5 rounded-md p-2 backdrop-blur-lg {is_host
+								? 'sm:grid-cols-2'
+								: 'sm:w-auto'}"
+						>
 							<ShareButton class="btn preset-filled-primary-500 h-fit w-full" url={lobby_url}>
 								{#snippet child({ copied })}
 									{#if copied}
@@ -217,7 +221,7 @@
 									</button>
 
 									{#if saving}
-										<div class="text-primary-500 flex items-center justify-center gap-1 text-xs">
+										<div class="flex items-center justify-center gap-1 text-xs">
 											<LoaderCircle class="animate-spin" size={16} />
 											<span>Saving settings...</span>
 										</div>
@@ -357,23 +361,19 @@
 							</label>
 						</div>
 						{#if is_host}
-							<div class="sticky bottom-0 z-50 w-fit rounded-tr-md backdrop-blur-sm">
-								{#if auto_save.active}
-									<div class="text-primary-500 flex items-center gap-1 text-xs">
+							<div class="sticky bottom-0 z-50 flex w-full justify-center">
+								<span class="badge preset-tonal backdrop-blur-lg">
+									{#if auto_save.active}
 										<LoaderCircle class="animate-spin" size={16} />
 										Applying in {(auto_save.remaining / 1000).toFixed(1)}s...
-									</div>
-								{:else if changes}
-									<div class="text-primary-500 flex items-center gap-1 text-xs">
+									{:else if changes}
 										<Download size={16} />
 										Saving...
-									</div>
-								{:else}
-									<div class="text-primary-500 flex items-center gap-1 text-xs">
+									{:else}
 										<Check size={16} />
 										Up to Date
-									</div>
-								{/if}
+									{/if}
+								</span>
 							</div>
 						{/if}
 					</div>
