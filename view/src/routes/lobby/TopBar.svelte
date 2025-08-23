@@ -36,15 +36,15 @@
 							style="background-color: {colorFromUUID(id).background};"
 						>
 							{#if player.is_host}
-								<Crown color={colorFromUUID(id).text} size={20} strokeWidth={2.5} />
+								<Crown color={colorFromUUID(id).text} size={20} />
 							{:else}
-								<UserRound color={colorFromUUID(id).text} size={20} strokeWidth={2.5} />
+								<UserRound color={colorFromUUID(id).text} size={20} />
 							{/if}
 						</div>
 						<span class="font-semibold text-nowrap">{player.name}</span>
 						{#if player.is_czar}
 							<div class="sprite is-falling">
-								<Gavel class="text-surface-50-950" size={20} strokeWidth={2.25} />
+								<Gavel class="text-surface-50-950" size={20} />
 							</div>
 						{/if}
 					</span>

@@ -18,12 +18,12 @@
 	open={openState}
 	onclick={(e) => e.stopPropagation()}
 	onOpenChange={(e) => (openState = e.open)}
-	triggerBase="btn-icon preset-filled p-1 absolute top-1 left-1 z-[100]"
+	triggerBase="btn-icon preset-filled absolute top-1 left-1 z-[100]"
 	contentBase="p-0 relative rounded-md max-w-[90vw] max-h-[90vh] overflow-auto"
 	backdropClasses="backdrop-blur-sm"
 >
 	{#snippet trigger()}
-		<Fullscreen size={20} strokeWidth={2.5} />
+		<Fullscreen />
 	{/snippet}
 	{#snippet content()}
 		<img
@@ -34,7 +34,7 @@
 		/>
 		<button
 			type="button"
-			class="btn-icon preset-filled absolute top-1 right-1 p-1"
+			class="btn-icon preset-filled absolute top-1 right-1"
 			onclick={modalClose}
 		>
 			<X />
