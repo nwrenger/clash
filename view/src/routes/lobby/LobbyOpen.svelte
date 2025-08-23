@@ -137,7 +137,7 @@
 		composite
 		classes="h-full"
 		contentClasses="h-[calc(100%-70px)]"
-		listClasses="preset-tonal pt-2 px-2 rounded-md whitespace-nowrap"
+		listClasses="preset-tonal backdrop-blur-lg pt-2 px-2 !mb-0 rounded-md whitespace-nowrap"
 	>
 		{#snippet list()}
 			<Tabs.Control value="lobby" labelBase="btn hover:filter-none!">
@@ -152,7 +152,7 @@
 		{#snippet content()}
 			<Tabs.Panel classes="h-full" value="lobby">
 				<div class="h-full overflow-y-auto">
-					<div class="min-h-0 space-y-2 px-2 pb-2">
+					<div class="min-h-0 space-y-2 px-2 py-4">
 						{#each sortedEntries(lobby?.players) as [id, player]}
 							<div class="preset-filled grid w-full grid-cols-[1fr_auto] rounded-lg px-5 py-3">
 								<div
@@ -232,7 +232,7 @@
 					</div>
 				</div>
 			</Tabs.Panel>
-			<Tabs.Panel classes="h-full space-y-6 overflow-y-auto" value="settings">
+			<Tabs.Panel classes="h-full space-y-6 overflow-y-auto pt-4" value="settings">
 				{#if changable_settings}
 					<div class="space-y-3 px-2">
 						<div class="w-full space-y-2">
