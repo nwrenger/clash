@@ -404,10 +404,22 @@
 		lobby.phase = phase;
 
 		let change: number | undefined;
-		if (phase == 'RoundFinished') change = lobby.settings.wait_time_secs;
-		if (phase == 'Submitting') change = lobby.settings.max_submitting_time_secs;
-		if (phase == 'Judging') change = lobby.settings.max_judging_time_secs;
+		if (phase == 'RoundFinished') change = lobby.settings.wait_time_secs || undefined;
+		if (phase == 'Submitting') change = to_seconds(lobby.settings.max_submitting_time_secs, lobby);
+		if (phase == 'Judging') change = lobby.settings.max_judging_time_secs || undefined;
 		round.time = { self: change };
+	}
+
+	function to_seconds(scaling: api.Scaling | null, lobby: Lobby) {
+		if (scaling) {
+			switch (scaling.type) {
+				case 'Player':
+					let player_count = Object.keys(lobby.players || {}).length;
+					return scaling.seconds * player_count;
+				case 'Constant':
+					return scaling.seconds;
+			}
+		}
 	}
 </script>
 

@@ -49,6 +49,46 @@
 	);
 	let saving = $derived(changes || updating_decks);
 
+	const defaultSeconds = 90;
+	const secondsOptions = [5, 10, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150];
+
+	let submittingTimeType: string | null = $state(null);
+	let submittingTimeSeconds = $state(defaultSeconds);
+
+	$effect(() => {
+		const s = changable_settings?.max_submitting_time_secs ?? null;
+		submittingTimeType = s?.type ?? null;
+		submittingTimeSeconds = s?.seconds ?? defaultSeconds;
+	});
+
+	function setType(value: string) {
+		submittingTimeType = value;
+		if (!changable_settings) return;
+
+		if (value === '') {
+			changable_settings.max_submitting_time_secs = null;
+		} else {
+			const secs = Number.isFinite(submittingTimeSeconds) ? submittingTimeSeconds : defaultSeconds;
+			changable_settings.max_submitting_time_secs = {
+				type: value as 'Constant' | 'Player',
+				seconds: secs
+			};
+		}
+	}
+
+	function setSeconds(value: number) {
+		submittingTimeSeconds = value;
+		if (!changable_settings) return;
+
+		if (submittingTimeType === '') {
+			return;
+		}
+		changable_settings.max_submitting_time_secs = {
+			type: submittingTimeType as 'Constant' | 'Player',
+			seconds: value
+		};
+	}
+
 	$effect(() => {
 		if (lobby?.settings?.decks) updating_decks = false;
 	});
@@ -282,7 +322,7 @@
 								</div>
 							{/if}
 						</div>
-						<div class="grid w-full grid-cols-2 gap-1.5">
+						<div class="grid w-full space-y-3 sm:grid-cols-2 sm:gap-1.5 sm:space-y-0">
 							<label class="label">
 								<span class="label-text">Max Rounds</span>
 
@@ -328,20 +368,33 @@
 								</select>
 							</label>
 						</div>
-						<div class="grid w-full grid-cols-2 gap-1.5">
+						<div class="grid w-full space-y-3 sm:grid-cols-2 sm:gap-1.5 sm:space-y-0">
 							<label class="label">
 								<span class="label-text">Max Submitting Time</span>
 
-								<select
-									class="select"
-									bind:value={changable_settings.max_submitting_time_secs}
-									disabled={!is_host}
-								>
-									<option value={null}>None</option>
-									{#each [15, 30, 45, 60, 75, 90, 105, 120] as s}
-										<option value={s}>{s}s</option>
-									{/each}
-								</select>
+								<div class="input-group grid-cols-[auto_1fr_auto]">
+									<select
+										class="ig-select"
+										bind:value={submittingTimeType}
+										onchange={(e) => setType((e.target as HTMLSelectElement).value)}
+										disabled={!is_host}
+									>
+										<option value={null}>None</option>
+										<option value="Constant">Constant</option>
+										<option value="Player">Each Player &nbsp; </option>
+									</select>
+
+									<select
+										class="ig-select"
+										bind:value={submittingTimeSeconds}
+										onchange={(e) => setSeconds(+(e.target as HTMLSelectElement).value)}
+										disabled={!is_host || !submittingTimeType}
+									>
+										{#each secondsOptions as seconds}
+											<option value={seconds}>{seconds}s</option>
+										{/each}
+									</select>
+								</div>
 							</label>
 							<label class="label">
 								<span class="label-text">Max Judging Time</span>

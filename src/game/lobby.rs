@@ -657,12 +657,15 @@ impl Lobby {
     async fn submitting(&self) {
         self.set_phase(GamePhase::Submitting).await;
 
-        let max_submitting_time_secs = {
+        let (max_submitting_time_secs, player_count) = {
             let guard = self.state.read().await;
-            guard.settings.max_submitting_time_secs
+            (
+                guard.settings.max_submitting_time_secs.clone(),
+                guard.players.len(),
+            )
         };
         if let Some(max) = max_submitting_time_secs {
-            let timeout = sleep(Duration::from_secs(max));
+            let timeout = sleep(Duration::from_secs(max.to_seconds(player_count as u64)));
             tokio::pin!(timeout);
 
             loop {

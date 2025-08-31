@@ -132,7 +132,7 @@ pub struct Player {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Settings {
     pub max_rounds: u32,
-    pub max_submitting_time_secs: Option<u64>,
+    pub max_submitting_time_secs: Option<Scaling>,
     pub max_judging_time_secs: Option<u64>,
     pub wait_time_secs: Option<u64>,
     pub max_players: u32,
@@ -143,11 +143,33 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             max_rounds: 10,
-            max_submitting_time_secs: Some(90),
+            max_submitting_time_secs: Some(Scaling::default()),
             max_judging_time_secs: Some(30),
             wait_time_secs: Some(5),
             max_players: 20,
             decks: Vec::new(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(tag = "type", content = "seconds")]
+pub enum Scaling {
+    Player(u64),
+    Constant(u64),
+}
+
+impl Default for Scaling {
+    fn default() -> Self {
+        Self::Constant(90)
+    }
+}
+
+impl Scaling {
+    pub fn to_seconds(&self, player_count: u64) -> u64 {
+        match self {
+            Scaling::Player(seconds_each) => seconds_each * player_count,
+            Scaling::Constant(total) => *total,
         }
     }
 }

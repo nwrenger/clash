@@ -58,12 +58,14 @@ namespace api {
 
 	export interface Settings {
 		max_rounds: number;
-		max_submitting_time_secs?: number;
-		max_judging_time_secs?: number;
-		wait_time_secs?: number;
+		max_submitting_time_secs: Scaling | null;
+		max_judging_time_secs: number | null;
+		wait_time_secs: number | null;
 		max_players: number;
 		decks: DeckInfo[];
 	}
+
+	export type Scaling = { type: 'Player'; seconds: number } | { type: 'Constant'; seconds: number };
 
 	export interface DeckInfo {
 		name: string;
