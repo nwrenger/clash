@@ -53,6 +53,7 @@
 	import Hand from './Hand.svelte';
 	import Board from './Board.svelte';
 	import GameOver from './GameOver.svelte';
+	import Loading from './Loading.svelte';
 
 	let connection: Connection = $state({
 		ws: undefined,
@@ -458,8 +459,5 @@
 {:else if over}
 	<GameOver {connection} {lobby} {own} />
 {:else}
-	<div class="mx-auto flex max-w-3xl flex-col items-center space-y-6 px-4 py-8">
-		<p>Loading...</p>
-		<a href="/" class="btn preset-filled-secondary-500">Close Connection</a>
-	</div>
+	<Loading {connect} />
 {/if}

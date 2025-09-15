@@ -169,7 +169,7 @@
 	}
 </script>
 
-<div class="mx-auto flex h-full max-w-3xl flex-col items-center px-4 py-8">
+<div class="mx-auto flex h-full max-w-3xl flex-col items-center px-4 pt-8">
 	<Tabs
 		value={tabs}
 		onValueChange={(e) => (tabs = e.value)}
@@ -229,7 +229,7 @@
 						{/each}
 					</div>
 
-					<div class="sticky bottom-0 z-50 flex w-full flex-col items-center justify-center">
+					<div class="sticky bottom-0 z-50 mb-8 flex w-full flex-col items-center justify-center">
 						<div
 							class="preset-tonal grid w-full gap-1.5 rounded-md p-2 backdrop-blur-lg {is_host
 								? 'sm:grid-cols-2'
@@ -412,7 +412,7 @@
 							</label>
 						</div>
 						{#if is_host}
-							<div class="sticky bottom-0 z-50 flex w-full justify-center">
+							<div class="sticky bottom-0 z-50 mb-8 flex w-full justify-center">
 								<span class="badge preset-tonal backdrop-blur-lg">
 									{#if auto_save.active}
 										<LoaderCircle class="animate-spin" size={16} />
