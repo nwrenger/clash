@@ -440,7 +440,7 @@
 {#if joining}
 	<Joining bind:own_name={own.name} {join_lobby} />
 {:else if open}
-	<LobbyOpen {connection} {lobby} {own} />
+	<LobbyOpen {connection} {lobby} {own} {resetLogin} />
 {:else if gaming}
 	{@const is_czar = lobby!.players![own.id]?.is_czar || false}
 	<div class="mx-auto flex max-w-7xl flex-col items-center space-y-6 px-4 py-8">

@@ -27,9 +27,10 @@
 		connection: Connection;
 		lobby: Lobby;
 		own: Own;
+		resetLogin: () => void;
 	}
 
-	let { connection, lobby, own }: Props = $props();
+	let { connection, lobby, own, resetLogin }: Props = $props();
 
 	let tabs = $state('lobby');
 
@@ -155,6 +156,7 @@
 
 	async function leave() {
 		api.send_ws(connection.ws!, { type: 'LeaveLobby' });
+		resetLogin();
 		await goto('/');
 	}
 
