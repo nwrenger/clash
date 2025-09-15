@@ -3,21 +3,16 @@
 	import api from '$lib/api';
 	import { credentials } from '$lib/state';
 	import { handle_promise } from '$lib/toaster';
+	import { randomName } from '$lib/utils';
 	import { LoaderCircle, Plus, Sparkles, Github, ExternalLink, Shuffle } from 'lucide-svelte';
 
 	let name: string = $state('');
 	let creating = $state(false);
 
-	function randomName() {
-		const nouns = ['Gremlin', 'Noodle', 'Goblin', 'Pickle', 'Wombat', 'Tornado', 'Spatula'];
-		const adj = ['Chaotic', 'Spicy', 'Sneaky', 'Cosmic', 'Unhinged', 'Ludicrous', 'Quantum'];
-		name = `${adj[Math.floor(Math.random() * adj.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}`;
-	}
-
-	async function createLobby(e?: SubmitEvent) {
+	async function createLobby(e: Event) {
 		if (!name.trim() || creating) return;
 
-		if (e) e.preventDefault();
+		e.preventDefault();
 		creating = true;
 
 		try {
@@ -47,13 +42,13 @@
 
 <div class="mx-auto flex w-full max-w-3xl flex-col items-center px-4 py-8 sm:py-14">
 	<!-- hero -->
-	<div class="badge preset-tonal rounded-full">
+	<div class="badge preset-tonal flex-wrap rounded-full">
 		<span class="inline-flex items-center gap-1"><Sparkles size={14} /> public beta</span>
 		<span class="mx-2 opacity-40">•</span>
 		<span>built with Rust + Svelte</span>
 	</div>
 
-	<h1 class="h3 sm:h2 pt-4 text-center">
+	<h1 class="h2 pt-4 text-center">
 		Cards <span class="text-primary-500">(Ludicrous Ones)</span> Against Humanity
 	</h1>
 	<p class="pt-4 text-center sm:text-lg">
@@ -82,7 +77,7 @@
 								bind:value={name}
 								autocomplete="nickname"
 								disabled={creating}
-								onkeydown={(e) => e.key === 'Enter' && createLobby()}
+								onkeydown={(e) => e.key === 'Enter' && createLobby(e)}
 								maxlength="24"
 								aria-invalid={!name.trim() && creating ? 'true' : 'false'}
 							/>
@@ -90,7 +85,7 @@
 								type="button"
 								class="btn-icon preset-tonal"
 								title="Surprise me!"
-								onclick={randomName}
+								onclick={() => (name = randomName())}
 								disabled={creating}
 							>
 								<Shuffle size={18} />
@@ -134,7 +129,7 @@
 					<ExternalLink size={16} class="opacity-60" />
 				</a>
 
-				<ul class="flex flex-wrap items-center gap-2">
+				<ul class="flex w-full flex-wrap items-center justify-center gap-2">
 					<li class="badge preset-filled">Open Source</li>
 					<li class="badge preset-filled-secondary-500">Rust Backend</li>
 					<li class="badge preset-filled-tertiary-500">Svelte Frontend</li>
@@ -153,7 +148,7 @@
 		</div>
 		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-[2px]">
 			<h3 class="font-semibold">Private lobbies</h3>
-			<p>Spin up a room and drop the link—done.</p>
+			<p>Spin up a room and drop the link. Done!</p>
 		</div>
 		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-[2px]">
 			<h3 class="font-semibold">Extensible</h3>

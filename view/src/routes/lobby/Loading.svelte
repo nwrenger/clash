@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { RefreshCw, X } from 'lucide-svelte';
+
 	interface Props {
 		connect: () => void;
 	}
@@ -19,9 +21,13 @@
 	{:else}
 		<div class="preset-tonal grid w-full gap-1.5 rounded-md p-2 backdrop-blur-lg sm:grid-cols-2">
 			<button class="btn preset-filled-primary-500 h-fit w-full" onclick={connect}>
+				<RefreshCw size={20} />
 				Reconnect
 			</button>
-			<a href="/" class="btn preset-filled-error-500">Close Connection</a>
+			<a href="/" class="btn preset-filled-error-500">
+				<X size={20} />
+				Close Connection
+			</a>
 		</div>
 	{/if}
 </div>

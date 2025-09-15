@@ -16,10 +16,12 @@
 		LoaderCircle,
 		Play,
 		Settings2,
-		User
+		User,
+		LogOut
 	} from 'lucide-svelte';
 	import AddDeck from './AddDeck.svelte';
 	import type { Connection, Lobby, Own } from './+page.svelte';
+	import { goto } from '$app/navigation';
 
 	interface Props {
 		connection: Connection;
@@ -151,6 +153,11 @@
 			api.send_ws(connection.ws!, { type: 'Kick', data: { kicked: player_id } });
 	}
 
+	async function leave() {
+		api.send_ws(connection.ws!, { type: 'LeaveLobby' });
+		await goto('/');
+	}
+
 	function get_decks() {
 		api.send_ws(connection.ws!, { type: 'FetchDecks' });
 		updating_decks = true;
@@ -232,9 +239,17 @@
 					<div class="sticky bottom-0 z-50 mb-8 flex w-full flex-col items-center justify-center">
 						<div
 							class="preset-tonal grid w-full gap-1.5 rounded-md p-2 backdrop-blur-lg {is_host
-								? 'sm:grid-cols-2'
-								: 'sm:w-auto'}"
+								? 'sm:grid-cols-3'
+								: 'sm:grid-cols-2'}"
 						>
+							<button
+								class="btn preset-filled-error-500 h-fit w-full"
+								title="Log Out"
+								onclick={leave}
+							>
+								<LogOut size={20} />
+								Log Out
+							</button>
 							<ShareButton class="btn preset-filled-primary-500 h-fit w-full" url={lobby_url}>
 								{#snippet child({ copied })}
 									{#if copied}

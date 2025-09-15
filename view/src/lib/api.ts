@@ -106,7 +106,8 @@ namespace api {
 		| { type: 'StartRound' }
 		| { type: 'RestartRound' }
 		| { type: 'SubmitOwnCards'; data: { indexes: number[] } }
-		| { type: 'CzarPick'; data: { index: number } };
+		| { type: 'CzarPick'; data: { index: number } }
+		| { type: 'LeaveLobby' };
 
 	export type ServerEvent =
 		| { type: 'PlayerJoin'; data: { player_id: Uuid; player_info: PlayerInfo } }

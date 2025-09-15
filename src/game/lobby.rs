@@ -346,6 +346,12 @@ impl Lobby {
         Ok(())
     }
 
+    pub async fn leave(&self, own_id: &Uuid) -> Result<()> {
+        self.remove_player(own_id, None).await;
+
+        Ok(())
+    }
+
     pub async fn player_disconnected(self: &Arc<Lobby>, player_id: Uuid) {
         // Make sure the player didn't got kicked, removed by anything beforehand or is in the disconnecting phase
         let still_present = {

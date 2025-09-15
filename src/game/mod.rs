@@ -36,6 +36,8 @@ pub enum ClientEvent {
     SubmitOwnCards { indexes: Vec<usize> },
     /// Czar picks a winning card
     CzarPick { index: usize },
+    /// Client leaves the current lobby
+    LeaveLobby,
 }
 
 /// Sent by the server to clients (broadcasted to all clients)

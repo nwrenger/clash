@@ -40,7 +40,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onDestroy, onMount } from 'svelte';
-	import { beforeNavigate, goto } from '$app/navigation';
 
 	import api from '$lib/api';
 	import { credentials } from '$lib/state';
@@ -91,15 +90,6 @@
 	let finished = $derived(lobby?.phase == 'RoundFinished');
 	let gaming = $derived(submitting || judging || finished);
 	let over = $derived(lobby?.phase == 'GameOver');
-
-	// Prevent Navigation when in Game/Game Over
-	beforeNavigate(({ cancel, type }) => {
-		if (type != 'leave' && type != 'link') {
-			if (!confirm('Your trying to navigate out of the current lobby. Proceed?')) {
-				cancel();
-			}
-		}
-	});
 
 	onDestroy(() => {
 		connection.ws?.close();
@@ -391,7 +381,11 @@
 		connection.connected = false;
 	}
 
-	function join_lobby() {
+	function join_lobby(e?: Event) {
+		if (!own.name.trim()) return;
+
+		if (e) e.preventDefault();
+
 		// Make sure to reconnect if an error closed the connection
 		// Like when trying to join a full or closed lobby
 		if (!connection.connected) connect();

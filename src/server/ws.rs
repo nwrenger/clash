@@ -120,6 +120,7 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
                         ClientEvent::CzarPick { index } => {
                             lobby.submit_czar_choice(&player_id, index).await
                         }
+                        ClientEvent::LeaveLobby => lobby.leave(&player_id).await,
                     }
                 } {
                     // hope this does'nt throw an error otherwise :skull:

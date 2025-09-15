@@ -161,3 +161,9 @@ function rgbToHex(r: number, g: number, b: number) {
 	const h = (n: number) => Math.max(0, Math.min(255, n)).toString(16).padStart(2, '0');
 	return `#${h(r)}${h(g)}${h(b)}`;
 }
+
+export function randomName(): string {
+	const nouns = ['Gremlin', 'Noodle', 'Goblin', 'Pickle', 'Wombat', 'Tornado', 'Spatula'];
+	const adj = ['Chaotic', 'Spicy', 'Sneaky', 'Cosmic', 'Unhinged', 'Ludicrous', 'Quantum'];
+	return `${adj[Math.floor(Math.random() * adj.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}`;
+}

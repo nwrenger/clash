@@ -58,7 +58,7 @@
 							<Trophy size={32} />
 						{/if}
 						<div
-							class="flex w-full items-center justify-center space-x-1.5 {id === own.id
+							class="flex w-full items-center justify-center space-x-1.5 px-1 {id === own.id
 								? 'text-primary-500'
 								: ''}"
 						>
