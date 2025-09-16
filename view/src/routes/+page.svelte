@@ -108,9 +108,7 @@
 						{/if}
 					</button>
 
-					<p class="text-on-surface-variant text-sm">
-						Nicknames are visible to players
-					</p>
+					<p class="text-on-surface-variant text-sm">Nicknames are visible to players</p>
 				</form>
 			</div>
 
@@ -121,7 +119,6 @@
 				<a
 					href="https://github.com/nwrenger/clash"
 					target="_blank"
-					rel="noopener noreferrer"
 					class="btn preset-tonal h-9 w-full"
 				>
 					<Github size={18} />
