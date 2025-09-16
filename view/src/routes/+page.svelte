@@ -109,7 +109,7 @@
 					</button>
 
 					<p class="text-on-surface-variant text-sm">
-						Nicknames are visible to players. Keep it spicy 🌶️
+						Nicknames are visible to players
 					</p>
 				</form>
 			</div>
