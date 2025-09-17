@@ -157,7 +157,9 @@
 	async function leave() {
 		api.send_ws(connection.ws!, { type: 'LeaveLobby' });
 		resetLogin();
-		await goto('/');
+
+		// Return to homepage and making sure that the current page state won't be invalidated
+		await goto('/', { replaceState: false, invalidateAll: false });
 	}
 
 	function get_decks() {
