@@ -372,17 +372,17 @@
 
 							<span
 								class="badge preset-filled-surface-300-700"
-								title="Whites: {card_count.target.whites}"
-							>
-								<CahIcon class="h-6" fill="#fff" />
-								{Math.round(card_count.current.whites)}
-							</span>
-							<span
-								class="badge preset-filled-surface-300-700"
 								title="Blacks: {card_count.target.blacks}"
 							>
 								<CahIcon class="h-6" />
 								{Math.round(card_count.current.blacks)}
+							</span>
+							<span
+								class="badge preset-filled-surface-300-700"
+								title="Whites: {card_count.target.whites}"
+							>
+								<CahIcon class="h-6" fill="#fff" />
+								{Math.round(card_count.current.whites)}
 							</span>
 						</div>
 
