@@ -2,7 +2,13 @@
 	import { page } from '$app/state';
 	import api from '$lib/api';
 	import ShareButton from '$lib/components/ShareButton.svelte';
-	import { areObjectsEqual, colorFromUUID, deepClone, sortedEntries } from '$lib/utils';
+	import {
+		areObjectsEqual,
+		colorFromUUID,
+		deepClone,
+		relativeTime,
+		sortedEntries
+	} from '$lib/utils';
 	import { Avatar, Tabs } from '@skeletonlabs/skeleton-svelte';
 	import {
 		Ban,
@@ -17,11 +23,13 @@
 		Play,
 		Settings2,
 		User,
-		LogOut
+		LogOut,
+		ExternalLink
 	} from 'lucide-svelte';
 	import AddDeck from './AddDeck.svelte';
 	import type { Connection, Lobby, Own } from './+page.svelte';
 	import { goto } from '$app/navigation';
+	import CahIcon from '$lib/components/CahIcon.svelte';
 
 	interface Props {
 		connection: Connection;
@@ -52,6 +60,24 @@
 	);
 	let saving = $derived(changes || updating_decks);
 
+	let card_count = $derived.by(getCardCount);
+	let valid_config = $derived(
+		Object.keys(lobby.players || {}).length >= 2 && card_count.blacks > 0 && card_count.whites > 0
+	);
+
+	function getCardCount() {
+		let enabled_decks = changable_settings?.decks.filter((d) => d.enabled) || [];
+
+		let whites = 0;
+		let blacks = 0;
+		for (const deck of enabled_decks) {
+			whites += deck.whites_count;
+			blacks += deck.blacks_count;
+		}
+
+		return { whites: whites, blacks: blacks };
+	}
+
 	const defaultSeconds = 90;
 	const secondsOptions = [5, 10, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150];
 
@@ -64,7 +90,7 @@
 		submittingTimeSeconds = s?.seconds ?? defaultSeconds;
 	});
 
-	function setType(value: string) {
+	function setSubmittingTime(value: string) {
 		submittingTimeType = value;
 		if (!changable_settings) return;
 
@@ -79,7 +105,7 @@
 		}
 	}
 
-	function setSeconds(value: number) {
+	function setSubmittingSeconds(value: number) {
 		submittingTimeSeconds = value;
 		if (!changable_settings) return;
 
@@ -180,7 +206,7 @@
 	}
 </script>
 
-<div class="mx-auto flex h-full max-w-3xl flex-col items-center px-4 pt-8">
+<div class="mx-auto flex h-full max-w-3xl flex-col items-center overflow-y-hidden px-4 pt-8">
 	<Tabs
 		value={tabs}
 		onValueChange={(e) => (tabs = e.value)}
@@ -271,7 +297,7 @@
 									<button
 										class="btn preset-filled-primary-500"
 										onclick={start_game}
-										disabled={saving}
+										disabled={saving || !valid_config}
 									>
 										<Play size={22} />
 										Start Game
@@ -292,33 +318,67 @@
 			<Tabs.Panel classes="h-full space-y-6 overflow-y-auto pt-4" value="settings">
 				{#if changable_settings}
 					<div class="space-y-3 px-2">
-						<div class="w-full space-y-2">
-							<div class="label">
-								<span class="label-text">Decks</span>
-								{#each changable_settings.decks as deck}
-									<label class="flex items-center space-x-2">
-										<input
-											disabled={!is_host}
-											class="checkbox"
-											type="checkbox"
-											checked={deck.enabled}
-											onclick={() => (deck.enabled = !deck.enabled)}
-										/>
-										<span>
-											<span>{deck.name}</span>
-											<a
-												class="anchor text-xs"
-												href="https://cast.clrtd.com/deck/{deck.deckcode}"
-												target="_blank">{deck.deckcode}</a
-											>
-											<span class="text-surface-800-200 text-xs">
-												{new Date(deck.fetched_at * 1000).toLocaleString()}
-											</span>
-										</span>
-									</label>
+						<div class="label">
+							<span class="label-text">Decks</span>
+							<!-- deck list -->
+							<div class="grid grid-cols-1 gap-1 sm:grid-cols-2">
+								{#each changable_settings.decks as deck (deck.deckcode)}
+									<div class="preset-tonal rounded-base">
+										<label
+											class="rounded-base {is_host
+												? 'hover:preset-tonal cursor-pointer'
+												: ''} flex items-start gap-3 p-3 transition select-none"
+										>
+											<input
+												disabled={!is_host}
+												class="checkbox checkbox-sm mt-[2px]"
+												type="checkbox"
+												checked={deck.enabled}
+												onchange={() => (deck.enabled = !deck.enabled)}
+												aria-label={`Enable ${deck.name}`}
+											/>
+
+											<div class="min-w-0 flex-1">
+												<div class="flex">
+													<span class="truncate">{deck.name}</span>
+												</div>
+
+												<div
+													class="text-surface-800-200 mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
+												>
+													<a
+														class="anchor flex w-fit items-center text-xs"
+														href={'https://cast.clrtd.com/deck/' + deck.deckcode}
+														target="_blank"
+														rel="noreferrer"
+														onclick={(e) => e.stopPropagation()}
+														title="Open deck in browser"
+													>
+														<span>{deck.deckcode}</span>
+														<ExternalLink size={18} class="pb-[2px] pl-1" />
+													</a>
+													<span title={new Date(deck.fetched_at * 1000).toLocaleString()}>
+														Updated {relativeTime(deck.fetched_at)}
+													</span>
+												</div>
+											</div>
+										</label>
+									</div>
 								{/each}
 							</div>
 
+							<!-- tiny summary chips -->
+							<span class="badge preset-filled-surface-300-700" title="Whites: {card_count.whites}">
+								<CahIcon class="h-6" fill="#fff" />
+								{card_count.whites}
+							</span>
+							<span class="badge preset-filled-surface-300-700" title="Blacks: {card_count.blacks}">
+								<CahIcon class="h-6" />
+								{card_count.blacks}
+							</span>
+						</div>
+
+						<div class="w-full space-y-2">
 							{#if is_host}
 								<div class="label">
 									<span class="label-text">Manage Decks</span>
@@ -343,18 +403,29 @@
 						</div>
 						<div class="grid w-full space-y-3 sm:grid-cols-2 sm:gap-1.5 sm:space-y-0">
 							<label class="label">
-								<span class="label-text">Max Rounds</span>
+								<span class="label-text">End Condition</span>
 
-								<select
-									class="select"
-									bind:value={changable_settings.max_rounds}
-									disabled={!is_host}
-								>
-									{#each Array.from({ length: 69 }) as _, i}
-										{@const round = i + 1}
-										<option value={round}>{round}</option>
-									{/each}
-								</select>
+								<div class="input-group grid-cols-[auto_1fr_auto]">
+									<select
+										class="ig-select"
+										bind:value={changable_settings.end_condition.type}
+										disabled={!is_host}
+									>
+										<option value="MaxRounds">Max Rounds &nbsp;</option>
+										<option value="MaxPoints">Max Points</option>
+									</select>
+
+									<select
+										class="ig-select"
+										bind:value={changable_settings.end_condition.limit}
+										disabled={!is_host}
+									>
+										{#each Array.from({ length: 69 }) as _, i}
+											{@const round = i + 1}
+											<option value={round}>{round}</option>
+										{/each}
+									</select>
+								</div>
 							</label>
 							<label class="label">
 								<span class="label-text">Max Players</span>
@@ -387,7 +458,11 @@
 								</select>
 							</label>
 						</div>
-						<div class="grid w-full space-y-3 sm:grid-cols-2 sm:gap-1.5 sm:space-y-0">
+						<div
+							class="grid w-full space-y-3 sm:grid-cols-2 sm:gap-1.5 sm:space-y-0 {!is_host
+								? 'mb-8'
+								: ''}"
+						>
 							<label class="label">
 								<span class="label-text">Max Submitting Time</span>
 
@@ -395,18 +470,18 @@
 									<select
 										class="ig-select"
 										bind:value={submittingTimeType}
-										onchange={(e) => setType((e.target as HTMLSelectElement).value)}
+										onchange={(e) => setSubmittingTime((e.target as HTMLSelectElement).value)}
 										disabled={!is_host}
 									>
 										<option value={null}>None</option>
 										<option value="Constant">Constant</option>
-										<option value="Player">Each Player &nbsp; </option>
+										<option value="Player">Each Player &nbsp;</option>
 									</select>
 
 									<select
 										class="ig-select"
 										bind:value={submittingTimeSeconds}
-										onchange={(e) => setSeconds(+(e.target as HTMLSelectElement).value)}
+										onchange={(e) => setSubmittingSeconds(+(e.target as HTMLSelectElement).value)}
 										disabled={!is_host || !submittingTimeType}
 									>
 										{#each secondsOptions as seconds}

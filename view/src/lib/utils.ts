@@ -167,3 +167,24 @@ export function randomName(): string {
 	const adj = ['Chaotic', 'Spicy', 'Sneaky', 'Cosmic', 'Unhinged', 'Ludicrous', 'Quantum'];
 	return `${adj[Math.floor(Math.random() * adj.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}`;
 }
+
+export function relativeTime(tsSec: number) {
+	const d = new Date(tsSec * 1000);
+	const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+	const diffMs = d.getTime() - Date.now();
+
+	const minute = 60_000;
+	const hour = 60 * minute;
+	const day = 24 * hour;
+	const year = 365.25 * day;
+
+	const minutes = Math.round(diffMs / minute);
+	const hours = Math.round(diffMs / hour);
+	const days = Math.round(diffMs / day);
+	const years = Math.round(diffMs / year);
+
+	if (Math.abs(minutes) < 60) return rtf.format(minutes, 'minute');
+	if (Math.abs(hours) < 24) return rtf.format(hours, 'hour');
+	if (Math.abs(days) < 365) return rtf.format(days, 'day');
+	return rtf.format(years, 'year');
+}

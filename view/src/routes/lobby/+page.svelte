@@ -109,6 +109,13 @@
 	});
 
 	function connect() {
+		// Making sure that there aren't any clients which are mulitple times connected (which is possible)
+		if (connection.ws) {
+			connection.connected = false;
+			connection.ws.close();
+			connection.ws = undefined;
+		}
+
 		connection.ws = api.connect_ws(lobby.id as api.Uuid);
 
 		connection.ws.onopen = () => {

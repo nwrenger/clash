@@ -53,9 +53,7 @@
 					Join lobby
 				</button>
 
-				<p class="text-on-surface-variant text-sm">
-					Nicknames are visible to players
-				</p>
+				<p class="text-sm">Nicknames are visible to players</p>
 			</form>
 		</div>
 	</div>

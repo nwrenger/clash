@@ -17,6 +17,8 @@ use tokio::{fs, io::AsyncWriteExt};
 pub struct DeckInfo {
     pub name: String,
     pub deckcode: String,
+    pub whites_count: usize,
+    pub blacks_count: usize,
     pub enabled: bool,
     pub fetched_at: u64,
 }
@@ -92,6 +94,8 @@ impl Deck {
             .map(|d| DeckInfo {
                 name: d.name.clone(),
                 deckcode: d.deckcode.clone(),
+                whites_count: d.whites.len(),
+                blacks_count: d.blacks.len(),
                 enabled: false,
                 fetched_at: d.fetched_at,
             })

@@ -7,7 +7,7 @@ use crate::{
     error::Error,
     game::{
         deck::{BlackCard, DeckInfo, WhiteCard},
-        lobby::GamePhase,
+        lobby::{GamePhase, LobbyData},
     },
 };
 
@@ -133,7 +133,7 @@ pub struct Player {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Settings {
-    pub max_rounds: u32,
+    pub end_condition: EndCondition,
     pub max_submitting_time_secs: Option<Scaling>,
     pub max_judging_time_secs: Option<u64>,
     pub wait_time_secs: Option<u64>,
@@ -144,12 +144,36 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            max_rounds: 10,
+            end_condition: EndCondition::default(),
             max_submitting_time_secs: Some(Scaling::default()),
             max_judging_time_secs: Some(30),
             wait_time_secs: Some(5),
             max_players: 20,
             decks: Vec::new(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+#[serde(tag = "type", content = "limit")]
+pub enum EndCondition {
+    MaxRounds(u32),
+    MaxPoints(u32),
+}
+
+impl Default for EndCondition {
+    fn default() -> Self {
+        Self::MaxRounds(10)
+    }
+}
+
+impl EndCondition {
+    fn is_reached(&self, lobby_data: &LobbyData) -> bool {
+        match &self {
+            EndCondition::MaxRounds(limit) => lobby_data.round >= *limit,
+            EndCondition::MaxPoints(limit) => {
+                lobby_data.players.iter().any(|p| p.1.info.points >= *limit)
+            }
         }
     }
 }

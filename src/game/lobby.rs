@@ -569,7 +569,7 @@ impl Lobby {
 
             let done = {
                 let guard = self.state.read().await;
-                guard.round >= guard.settings.max_rounds
+                guard.settings.end_condition.is_reached(&guard)
             };
             if done {
                 break;

@@ -57,7 +57,7 @@ namespace api {
 	}
 
 	export interface Settings {
-		max_rounds: number;
+		end_condition: EndCondition;
 		max_submitting_time_secs: Scaling | null;
 		max_judging_time_secs: number | null;
 		wait_time_secs: number | null;
@@ -65,11 +65,17 @@ namespace api {
 		decks: DeckInfo[];
 	}
 
+	export type EndCondition =
+		| { type: 'MaxRounds'; limit: number }
+		| { type: 'MaxPoints'; limit: number };
+
 	export type Scaling = { type: 'Player'; seconds: number } | { type: 'Constant'; seconds: number };
 
 	export interface DeckInfo {
 		name: string;
 		deckcode: string;
+		whites_count: number;
+		blacks_count: number;
 		enabled: boolean;
 		fetched_at: number;
 	}
