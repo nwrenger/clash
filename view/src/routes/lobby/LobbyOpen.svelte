@@ -370,7 +370,6 @@
 								{/each}
 							</div>
 
-							<!-- tiny summary chips -->
 							<span
 								class="badge preset-filled-surface-300-700"
 								title="Whites: {card_count.target.whites}"
