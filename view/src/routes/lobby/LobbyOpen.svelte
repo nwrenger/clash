@@ -71,14 +71,14 @@
 	function getCardCount() {
 		let enabled_decks = changable_settings?.decks.filter((d) => d.enabled) || [];
 
-		let whites = 0;
 		let blacks = 0;
+		let whites = 0;
 		for (const deck of enabled_decks) {
-			whites += deck.whites_count;
 			blacks += deck.blacks_count;
+			whites += deck.whites_count;
 		}
 
-		return { whites: whites, blacks: blacks };
+		return { blacks: blacks, whites: whites };
 	}
 
 	const defaultSeconds = 90;

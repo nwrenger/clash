@@ -74,8 +74,8 @@ namespace api {
 	export interface DeckInfo {
 		name: string;
 		deckcode: string;
-		whites_count: number;
 		blacks_count: number;
+		whites_count: number;
 		enabled: boolean;
 		fetched_at: number;
 	}
