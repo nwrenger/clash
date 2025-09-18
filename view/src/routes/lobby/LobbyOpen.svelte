@@ -30,6 +30,7 @@
 	import type { Connection, Lobby, Own } from './+page.svelte';
 	import { goto } from '$app/navigation';
 	import CahIcon from '$lib/components/CahIcon.svelte';
+	import { Tween, tweened } from 'svelte/motion';
 
 	interface Props {
 		connection: Connection;
@@ -60,9 +61,11 @@
 	);
 	let saving = $derived(changes || updating_decks);
 
-	let card_count = $derived.by(getCardCount);
+	let card_count = Tween.of(getCardCount);
 	let valid_config = $derived(
-		Object.keys(lobby.players || {}).length >= 2 && card_count.blacks > 0 && card_count.whites > 0
+		Object.keys(lobby.players || {}).length >= 2 &&
+			card_count.target.blacks > 0 &&
+			card_count.target.whites > 0
 	);
 
 	function getCardCount() {
@@ -368,13 +371,19 @@
 							</div>
 
 							<!-- tiny summary chips -->
-							<span class="badge preset-filled-surface-300-700" title="Whites: {card_count.whites}">
+							<span
+								class="badge preset-filled-surface-300-700"
+								title="Whites: {card_count.target.whites}"
+							>
 								<CahIcon class="h-6" fill="#fff" />
-								{card_count.whites}
+								{Math.round(card_count.current.whites)}
 							</span>
-							<span class="badge preset-filled-surface-300-700" title="Blacks: {card_count.blacks}">
+							<span
+								class="badge preset-filled-surface-300-700"
+								title="Blacks: {card_count.target.blacks}"
+							>
 								<CahIcon class="h-6" />
-								{card_count.blacks}
+								{Math.round(card_count.current.blacks)}
 							</span>
 						</div>
 
