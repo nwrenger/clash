@@ -104,8 +104,7 @@
 		if (lobby?.settings?.decks) updating_decks = false;
 	});
 	$effect(() => {
-		// Make sure that changes are only applied after the timer ran out
-		if (!changes || !is_host) changable_settings = deepClone(lobby?.settings);
+		changable_settings = deepClone(lobby?.settings);
 	});
 	$effect(applySave);
 
@@ -152,6 +151,11 @@
 				type: 'UpdateSettings',
 				data: { settings: changable_settings }
 			});
+	}
+
+	function blur(e: Event) {
+		const el = e.currentTarget as HTMLSelectElement;
+		el.blur();
 	}
 </script>
 
@@ -261,7 +265,12 @@
 						<InfoTooltip description="The game ends once the round count reaches this maximum" />
 					</span>
 
-					<select class="select" bind:value={changable_settings.max_rounds} disabled={!is_host}>
+					<select
+						onchange={blur}
+						class="select"
+						bind:value={changable_settings.max_rounds}
+						disabled={!is_host}
+					>
 						<option value={null}>None</option>
 						{#each Array.from({ length: 10 }) as _, i}
 							{@const round = (i + 1) * 5}
@@ -276,7 +285,12 @@
 						<InfoTooltip description="The game ends once a player's points reach this maximum" />
 					</span>
 
-					<select class="select" bind:value={changable_settings.max_points} disabled={!is_host}>
+					<select
+						onchange={blur}
+						class="select"
+						bind:value={changable_settings.max_points}
+						disabled={!is_host}
+					>
 						<option value={null}>None</option>
 						{#each Array.from({ length: 10 }) as _, i}
 							{@const points = (i + 1) * 2}
@@ -311,7 +325,12 @@
 						/>
 					</span>
 
-					<select class="select" bind:value={changable_settings.wait_time_secs} disabled={!is_host}>
+					<select
+						onchange={blur}
+						class="select"
+						bind:value={changable_settings.wait_time_secs}
+						disabled={!is_host}
+					>
 						<option value={null}>None</option>
 						{#each [5, 10, 15, 20] as s}
 							<option value={s}>{s}s</option>
@@ -337,7 +356,10 @@
 						<select
 							class="ig-select opacity-100!"
 							bind:value={submittingTimeType}
-							onchange={(e) => setSubmittingTime((e.target as HTMLSelectElement).value)}
+							onchange={(e) => {
+								blur(e);
+								setSubmittingTime((e.target as HTMLSelectElement).value);
+							}}
 							disabled={!is_host}
 						>
 							<option value={null}>None</option>
@@ -348,7 +370,10 @@
 						<select
 							class="ig-select opacity-100!"
 							bind:value={submittingTimeSeconds}
-							onchange={(e) => setSubmittingSeconds(+(e.target as HTMLSelectElement).value)}
+							onchange={(e) => {
+								blur(e);
+								setSubmittingSeconds(+(e.target as HTMLSelectElement).value);
+							}}
 							disabled={!is_host || !submittingTimeType}
 						>
 							{#each secondsOptions as seconds}
@@ -364,6 +389,7 @@
 					</span>
 
 					<select
+						onchange={blur}
 						class="select"
 						bind:value={changable_settings.max_judging_time_secs}
 						disabled={!is_host}
