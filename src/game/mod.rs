@@ -168,12 +168,15 @@ impl Default for Settings {
 
 impl Settings {
     pub fn end_condition_reached(&self, lobby_data: &LobbyData) -> bool {
-        let max_rounds_reached = match self.max_points {
-            Some(limit) => lobby_data.round >= limit,
+        let max_rounds_reached = match self.max_rounds {
+            Some(max_rounds) => lobby_data.round >= max_rounds,
             None => false,
         };
         let max_points_reached = match self.max_points {
-            Some(limit) => lobby_data.players.iter().any(|p| p.1.info.points >= limit),
+            Some(max_points) => lobby_data
+                .players
+                .iter()
+                .any(|p| p.1.info.points >= max_points),
             None => false,
         };
 
