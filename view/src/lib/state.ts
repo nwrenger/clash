@@ -1,12 +1,11 @@
 import { persisted, type Persisted } from 'svelte-persisted-store';
 import type api from './api';
 
-export interface Credentials {
+export interface Session {
 	lobby_id: api.Uuid;
-	id: api.Uuid;
-	name: string;
+	credentials: api.Credentials;
 }
 
-export const credentials: Persisted<null | Credentials> = persisted('credentials', null, {
+export const session: Persisted<null | Session> = persisted('session', null, {
 	storage: 'session'
 });

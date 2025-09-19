@@ -5,8 +5,7 @@
 	}
 
 	export interface Own {
-		id: api.Uuid;
-		name: string;
+		credentials: api.Credentials;
 		logged_in: boolean;
 		cards: api.WhiteCard[];
 		selected_cards: number[];
@@ -42,7 +41,7 @@
 	import { onDestroy, onMount } from 'svelte';
 
 	import api from '$lib/api';
-	import { credentials } from '$lib/state';
+	import { session } from '$lib/state';
 	import { sortedEntries } from '$lib/utils';
 	import { show_error, toaster } from '$lib/toaster';
 
@@ -60,8 +59,7 @@
 	});
 
 	let own: Own = $state({
-		id: crypto.randomUUID(),
-		name: '',
+		credentials: { name: '', id: crypto.randomUUID(), secret: crypto.randomUUID() },
 		logged_in: false,
 		cards: [],
 		selected_cards: []
@@ -99,10 +97,9 @@
 		lobby.id = page.url.searchParams.get('id') || '';
 
 		// get stored data if already logged in
-		own.logged_in = $credentials?.lobby_id == lobby.id;
-		if ($credentials && own.logged_in) {
-			own.id = $credentials.id;
-			own.name = $credentials.name;
+		own.logged_in = $session?.lobby_id == lobby.id;
+		if ($session && own.logged_in) {
+			own.credentials = $session.credentials;
 		}
 
 		connect();
@@ -203,7 +200,7 @@
 		let host_id = msg.data.player_id;
 		let new_host = lobby.players[host_id];
 		new_host.is_host = true;
-		if (host_id === own.id) {
+		if (host_id === own.credentials.id) {
 			toaster.warning({
 				title: 'You Are Now the Host',
 				description:
@@ -224,7 +221,7 @@
 		let czar = lobby.players[czar_id];
 		if (czar) {
 			czar.is_czar = true;
-			if (czar_id == own.id) {
+			if (czar_id == own.credentials.id) {
 				toaster.info({ title: `You are the Czar!` });
 			} else {
 				toaster.info({ title: `${czar.name} is the Czar!` });
@@ -241,7 +238,7 @@
 		let player_submit = lobby.players[id];
 		let placeholders = [];
 		for (let i = 0; i < round.black_card.fields; i++) {
-			if (id === own.id) {
+			if (id === own.credentials.id) {
 				placeholders.push({ text: 'Your Card' });
 			} else {
 				placeholders.push({ text: `Card by ${player_submit.name}` });
@@ -283,7 +280,7 @@
 		if (round.result.player_id) {
 			let winner = lobby.players[round.result.player_id];
 			winner.points += 1;
-			if (round.result.player_id == own.id) {
+			if (round.result.player_id == own.credentials.id) {
 				toaster.info({ title: `You are the winner of this round!` });
 			} else {
 				toaster.info({ title: `${winner.name} is the winner of this round!` });
@@ -374,10 +371,9 @@
 	}
 
 	function resetLogin() {
-		own.name = '';
-		own.id = crypto.randomUUID();
+		own.credentials = { name: '', id: crypto.randomUUID(), secret: crypto.randomUUID() };
 		own.logged_in = false;
-		$credentials = null;
+		$session = null;
 	}
 
 	function disconnect() {
@@ -389,7 +385,7 @@
 	}
 
 	function join_lobby(e?: Event) {
-		if (!own.name.trim()) return;
+		if (!own.credentials.name.trim()) return;
 
 		if (e) e.preventDefault();
 
@@ -397,8 +393,8 @@
 		// Like when trying to join a full or closed lobby
 		if (!connection.connected) connect();
 		// Connect and update credentials
-		api.send_ws(connection.ws!, { type: 'JoinLobby', data: { name: own.name, id: own.id } });
-		$credentials = { lobby_id: lobby.id as api.Uuid, id: own.id, name: own.name };
+		api.send_ws(connection.ws!, { type: 'JoinLobby', data: { credentials: own.credentials } });
+		$session = { lobby_id: lobby.id as api.Uuid, credentials: own.credentials };
 	}
 
 	function setPhase(phase: api.GamePhase) {
@@ -445,13 +441,13 @@
 />
 
 {#if joining}
-	<Joining bind:own_name={own.name} {join_lobby} />
+	<Joining bind:own_name={own.credentials.name} {join_lobby} />
 {:else if open}
 	<LobbyOpen {connection} {lobby} {own} {resetLogin} />
 {:else if gaming}
-	{@const is_czar = lobby!.players![own.id]?.is_czar || false}
+	{@const is_czar = lobby!.players![own.credentials.id]?.is_czar || false}
 	<div class="mx-auto flex max-w-7xl flex-col items-center space-y-6 px-4 py-8">
-		<TopBar {lobby} {own} {round} />
+		<TopBar {connection} {lobby} {own} {round} />
 
 		<Board {connection} {round} selectable={is_czar && judging} />
 

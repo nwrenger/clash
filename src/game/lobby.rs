@@ -24,7 +24,7 @@ use crate::{
     error::{Error, Result},
     game::{
         deck::{BlackCard, Deck, DeckInfo, WhiteCard},
-        ClientLobby, Player, PlayerInfo, PrivateServerEvent, ServerEvent, Settings,
+        ClientLobby, Credentials, Player, PlayerInfo, PrivateServerEvent, ServerEvent, Settings,
     },
     GRACE_PERIOD,
 };
@@ -190,7 +190,7 @@ impl Drop for Lobby {
 
 impl Lobby {
     /// Create a new lobby with host as first player.
-    pub async fn new(cache: PathBuf, host_name: String, host_id: Uuid) -> Result<Arc<Self>> {
+    pub async fn new(cache: PathBuf, host: Credentials) -> Result<Arc<Self>> {
         let lobby = Arc::new(Self {
             game_task: RwLock::new(None),
             disconnect_timers: DashMap::new(),
@@ -212,16 +212,17 @@ impl Lobby {
             guard.round = 0;
             guard.phase = GamePhase::LobbyOpen;
             let host_player = Player {
+                secret: host.secret,
                 info: PlayerInfo {
-                    name: host_name,
+                    name: host.name,
                     is_host: true,
                     is_czar: false,
                     points: 0,
                 },
                 cards: Vec::new(),
             };
-            guard.players.insert(host_id, host_player);
-            guard.czar_order.push_front(host_id);
+            guard.players.insert(host.id, host_player);
+            guard.czar_order.push_front(host.id);
         }
 
         Ok(lobby)
@@ -279,18 +280,22 @@ impl Lobby {
     }
 
     /// Player joins the lobby
-    pub async fn join(&self, player_name: String, player_id: Uuid) -> Result<()> {
+    pub async fn join(&self, credentials: &Credentials) -> Result<()> {
         let mut guard = self.state.write().await;
-        let is_rejoining = guard.players.contains_key(&player_id);
+        let re_joining = guard.players.get(&credentials.id);
         let has_host = guard.players.values().any(|p| p.info.is_host);
 
-        if is_rejoining {
-            if let Some((_, handle)) = self.disconnect_timers.remove(&player_id) {
+        if let Some(player) = re_joining {
+            if player.info.name != credentials.name || player.secret != credentials.secret {
+                return Err(Error::Unauthorized);
+            }
+
+            if let Some((_, handle)) = self.disconnect_timers.remove(&credentials.id) {
                 handle.abort();
             }
 
             if !has_host {
-                if let Some(player) = guard.players.get_mut(&player_id) {
+                if let Some(player) = guard.players.get_mut(&credentials.id) {
                     player.info.is_host = true;
                 }
             }
@@ -310,23 +315,24 @@ impl Lobby {
         let is_first_player = guard.players.is_empty();
 
         let player_info = PlayerInfo {
-            name: player_name,
+            name: credentials.name.to_owned(),
             is_host: is_first_player,
             is_czar: false,
             points: 0,
         };
 
         guard.players.insert(
-            player_id,
+            credentials.id,
             Player {
+                secret: credentials.secret,
                 info: player_info.clone(),
                 cards: Vec::new(),
             },
         );
-        guard.czar_order.push_front(player_id);
+        guard.czar_order.push_front(credentials.id);
 
         self.emit_global(ServerEvent::PlayerJoin {
-            player_id,
+            player_id: credentials.id,
             player_info,
         });
 
@@ -417,10 +423,31 @@ impl Lobby {
 
         // If a player was removed during a game, abort the game and end it for everyone
         if in_game {
-            self.cancel_task().await;
-            self.set_phase_and_emit(GamePhase::GameOver, ServerEvent::GameOver)
-                .await;
+            self.cancel_game().await;
         }
+    }
+
+    /// Cancels the current game abruptly
+    async fn cancel_game(&self) {
+        self.cancel_task().await;
+        self.set_phase_and_emit(GamePhase::GameOver, ServerEvent::GameOver)
+            .await;
+    }
+
+    /// Used for ending the current game
+    pub async fn end_game(&self, own_id: Option<&Uuid>) -> Result<()> {
+        let is_allowed = match own_id {
+            None => true,
+            Some(id) => self.is_host(id).await,
+        };
+
+        if is_allowed {
+            self.cancel_game().await;
+        } else {
+            return Err(Error::Unauthorized);
+        }
+
+        Ok(())
     }
 
     /// Update settings (host only)
@@ -569,7 +596,7 @@ impl Lobby {
 
             let done = {
                 let guard = self.state.read().await;
-                guard.settings.end_condition.is_reached(&guard)
+                guard.settings.end_condition_reached(&guard)
             };
             if done {
                 break;

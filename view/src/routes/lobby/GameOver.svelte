@@ -2,7 +2,7 @@
 	import confetti from 'canvas-confetti';
 	import api from '$lib/api';
 	import { colorFromUUID, sortedEntries } from '$lib/utils';
-	import { Crown, Trophy, UserRound } from 'lucide-svelte';
+	import { Crown, RotateCw, Trophy, UserRound } from 'lucide-svelte';
 	import type { Connection, Lobby, Own } from './+page.svelte';
 
 	interface Props {
@@ -58,7 +58,8 @@
 							<Trophy size={32} />
 						{/if}
 						<div
-							class="flex w-full items-center justify-center space-x-1.5 px-1 {id === own.id
+							class="flex w-full items-center justify-center space-x-1.5 px-1 {id ===
+							own.credentials.id
 								? 'text-primary-500'
 								: ''}"
 						>
@@ -77,7 +78,7 @@
 						<span class="hidden text-2xl sm:block">{player.points} pts</span>
 						<span class="text-2xl sm:hidden">{player.points} </span>
 					</div>
-					<span class="text-surface-800-200 text-sm">
+					<span class="text-surface-800-200 text-sm text-nowrap">
 						{idx === 0 ? '1st Place' : idx === 1 ? '2nd Place' : '3rd Place'}
 					</span>
 				</div>
@@ -92,7 +93,7 @@
 				<div class="preset-filled grid w-full grid-cols-[1fr_auto] rounded-lg px-5 py-3">
 					<div
 						class="flex w-full max-w-full min-w-0 flex-1 items-center justify-start space-x-1.5 {id ===
-						own.id
+						own.credentials.id
 							? 'text-primary-500'
 							: ''}"
 					>
@@ -114,10 +115,13 @@
 		</div>
 	{/if}
 
-	{#if lobby!.players![own.id]?.is_host}
+	{#if lobby!.players![own.credentials.id]?.is_host}
 		<div class="sticky bottom-0 z-50 flex w-full flex-col items-center justify-center">
 			<div class="preset-tonal w-fit rounded-md p-2 backdrop-blur-lg">
-				<button class="btn preset-filled-primary-500" onclick={reset_game}> Restart Game </button>
+				<button class="btn preset-filled-primary-500" onclick={reset_game}>
+					<RotateCw size={20} />
+					Restart Game
+				</button>
 			</div>
 		</div>
 	{/if}

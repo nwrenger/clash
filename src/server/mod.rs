@@ -3,12 +3,13 @@ use std::sync::Arc;
 
 use axum::{extract::State, Json};
 use dashmap::DashMap;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tokio::time::Instant;
 use uuid::Uuid;
 
 use crate::error::{Error, Result};
 use crate::game::lobby::Lobby;
+use crate::game::Credentials;
 use crate::TIMEOUT_INTERVAL;
 
 pub mod ws;
@@ -79,12 +80,6 @@ impl Default for ServerState {
     }
 }
 
-#[derive(Deserialize)]
-pub struct Host {
-    name: String,
-    id: Uuid,
-}
-
 #[derive(Serialize)]
 pub struct LobbyId {
     id: Uuid,
@@ -92,10 +87,10 @@ pub struct LobbyId {
 
 pub async fn create_lobby(
     State(state): State<Arc<ServerState>>,
-    Json(host): Json<Host>,
+    Json(host): Json<Credentials>,
 ) -> Result<Json<LobbyId>> {
     let lobby_id = Uuid::new_v4();
-    let lobby = Lobby::new(state.cache.clone(), host.name, host.id).await?;
+    let lobby = Lobby::new(state.cache.clone(), host).await?;
     state.lobbies.insert(lobby_id, lobby);
 
     Ok(Json(LobbyId { id: lobby_id }))

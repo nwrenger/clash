@@ -84,7 +84,7 @@ function error_msg(error: api.Error): Options {
 		case 'LobbyNotFound':
 			return {
 				title: 'Lobby Not Found',
-				description: `The lobby you're trying to join couldn't be found.`
+				description: `Either the lobby you're trying to join couldn't be found or you timed out and you should try to reconnect.`
 			};
 		case 'CardSubmission':
 			return {

@@ -2,13 +2,19 @@
 	import Countdown from '$lib/components/Countdown.svelte';
 	import { colorFromUUID, sortedEntries } from '$lib/utils';
 	import { Crown, Gavel, UserRound } from 'lucide-svelte';
-	import type { Lobby, Own, Round } from './+page.svelte';
+	import type { Connection, Lobby, Own, Round } from './+page.svelte';
+	import EndGame from './EndGame.svelte';
 
 	interface Props {
+		connection: Connection;
 		lobby: Lobby;
 		own: Own;
 		round: Round;
 	}
+
+	let { connection, lobby, own, round }: Props = $props();
+
+	let is_host = $derived(lobby!.players![own.credentials.id]?.is_host || false);
 
 	$effect(() => {
 		if (round.result?.player_id) {
@@ -16,8 +22,6 @@
 			el?.scrollIntoView({ inline: 'center', behavior: 'smooth' });
 		}
 	});
-
-	let { lobby, own, round }: Props = $props();
 </script>
 
 <div class="grid w-full grid-cols-[1fr_auto]">
@@ -30,7 +34,11 @@
 					: ''} pointer-events-none px-4 py-2"
 			>
 				<span class="flex h-full w-full flex-col items-center justify-center">
-					<span class="flex items-center space-x-1.5 {id === own.id ? 'text-primary-500' : ''}">
+					<span
+						class="flex items-center space-x-1.5 {id === own.credentials.id
+							? 'text-primary-500'
+							: ''}"
+					>
 						<div
 							class="w-7 rounded-sm p-1"
 							style="background-color: {colorFromUUID(id).background};"
@@ -65,6 +73,9 @@
 		<div class="card preset-filled-secondary-500 w-fit px-4 py-2">
 			{round.count}
 		</div>
+		{#if is_host}
+			<EndGame {connection} />
+		{/if}
 	</div>
 </div>
 

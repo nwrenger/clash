@@ -54,8 +54,8 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
             return;
         }
     };
-    let (player_name, player_id) = match serde_json::from_str::<ClientEvent>(&txt) {
-        Ok(ClientEvent::JoinLobby { name, id }) => (name, id),
+    let credentials = match serde_json::from_str::<ClientEvent>(&txt) {
+        Ok(ClientEvent::JoinLobby { credentials }) => credentials,
         _ => {
             send_event(&mut sender, &PrivateServerEvent::Error(Error::LobbyLogin)).await;
             return;
@@ -65,13 +65,13 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
     // Open global and private receivers and join the lobby
     let (mut global, mut private) = {
         // When join errors it's maken sure that no players got added beforehand
-        if let Err(msg) = lobby.join(player_name, player_id).await {
+        if let Err(msg) = lobby.join(&credentials).await {
             send_event(&mut sender, &PrivateServerEvent::Error(msg)).await;
             return;
         }
         (
             lobby.subscribe_global(),
-            lobby.subscribe_private(player_id).await,
+            lobby.subscribe_private(credentials.id).await,
         )
     };
 
@@ -95,7 +95,7 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
     });
 
     // Send lobby state on succesfull setup
-    lobby.send_lobby_state(&player_id).await;
+    lobby.send_lobby_state(&credentials.id).await;
 
     // Receive events from websocket, timeout after the `TIMEOUT_INTERVAL`
     while let Some(Ok(Ok(msg))) = timeout(TIMEOUT_INTERVAL, receiver.next()).await.transpose() {
@@ -105,27 +105,28 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
                     match event {
                         ClientEvent::JoinLobby { .. } => Ok(()),
                         ClientEvent::UpdateSettings { settings } => {
-                            lobby.update_settings(&player_id, settings).await
+                            lobby.update_settings(&credentials.id, settings).await
                         }
                         ClientEvent::AddDeck { deckcode } => {
-                            lobby.add_deck(&player_id, deckcode).await
+                            lobby.add_deck(&credentials.id, deckcode).await
                         }
-                        ClientEvent::FetchDecks => lobby.fetch_decks(&player_id).await,
-                        ClientEvent::Kick { kicked } => lobby.kick(&player_id, &kicked).await,
-                        ClientEvent::StartRound => lobby.start_game(&player_id).await,
-                        ClientEvent::RestartRound => lobby.reset_game(&player_id).await,
+                        ClientEvent::FetchDecks => lobby.fetch_decks(&credentials.id).await,
+                        ClientEvent::Kick { kicked } => lobby.kick(&credentials.id, &kicked).await,
+                        ClientEvent::EndGame => lobby.end_game(Some(&credentials.id)).await,
+                        ClientEvent::StartRound => lobby.start_game(&credentials.id).await,
+                        ClientEvent::RestartRound => lobby.reset_game(&credentials.id).await,
                         ClientEvent::SubmitOwnCards { indexes } => {
-                            lobby.submit_cards(&player_id, indexes).await
+                            lobby.submit_cards(&credentials.id, indexes).await
                         }
                         ClientEvent::CzarPick { index } => {
-                            lobby.submit_czar_choice(&player_id, index).await
+                            lobby.submit_czar_choice(&credentials.id, index).await
                         }
-                        ClientEvent::LeaveLobby => lobby.leave(&player_id).await,
+                        ClientEvent::LeaveLobby => lobby.leave(&credentials.id).await,
                     }
                 } {
                     // hope this does'nt throw an error otherwise :skull:
                     lobby
-                        .emit_private(&player_id, PrivateServerEvent::Error(error))
+                        .emit_private(&credentials.id, PrivateServerEvent::Error(error))
                         .await;
                 }
             }
@@ -133,5 +134,5 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
     }
 
     // Mark the player as disconnected
-    lobby.player_disconnected(player_id).await;
+    lobby.player_disconnected(credentials.id).await;
 }

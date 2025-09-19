@@ -17,6 +17,12 @@ namespace api {
 
 	export type Uuid = `${string}-${string}-${string}-${string}-${string}`;
 
+	export interface Credentials {
+		name: string;
+		id: Uuid;
+		secret: Uuid;
+	}
+
 	export interface LobbyId {
 		id: Uuid;
 	}
@@ -38,10 +44,10 @@ namespace api {
 
 	// === REST call ===
 
-	export async function create_lobby(name: string, id: string): Promise<LobbyId> {
+	export async function create_lobby(host: Credentials): Promise<LobbyId> {
 		return fetch_api(`${API_BASE}/lobby`, {
 			method: 'POST',
-			body: JSON.stringify({ name, id })
+			body: JSON.stringify(host)
 		});
 	}
 
@@ -57,17 +63,14 @@ namespace api {
 	}
 
 	export interface Settings {
-		end_condition: EndCondition;
+		max_rounds: number | null;
+		max_points: number | null;
 		max_submitting_time_secs: Scaling | null;
 		max_judging_time_secs: number | null;
 		wait_time_secs: number | null;
 		max_players: number;
 		decks: DeckInfo[];
 	}
-
-	export type EndCondition =
-		| { type: 'MaxRounds'; limit: number }
-		| { type: 'MaxPoints'; limit: number };
 
 	export type Scaling = { type: 'Player'; seconds: number } | { type: 'Constant'; seconds: number };
 
@@ -104,11 +107,12 @@ namespace api {
 	export type GamePhase = 'LobbyOpen' | 'Submitting' | 'Judging' | 'RoundFinished' | 'GameOver';
 
 	export type ClientEvent =
-		| { type: 'JoinLobby'; data: { name: string; id: Uuid } }
+		| { type: 'JoinLobby'; data: { credentials: Credentials } }
 		| { type: 'UpdateSettings'; data: { settings: Settings } }
 		| { type: 'AddDeck'; data: { deckcode: String } }
 		| { type: 'FetchDecks' }
 		| { type: 'Kick'; data: { kicked: Uuid } }
+		| { type: 'EndGame' }
 		| { type: 'StartRound' }
 		| { type: 'RestartRound' }
 		| { type: 'SubmitOwnCards'; data: { indexes: number[] } }

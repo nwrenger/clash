@@ -19,15 +19,17 @@ pub mod lobby;
 #[serde(tag = "type", content = "data")]
 pub enum ClientEvent {
     /// Client wants to join a lobby
-    JoinLobby { name: String, id: Uuid },
+    JoinLobby { credentials: Credentials },
     /// Client updates game settings (only host allowed)
     UpdateSettings { settings: Settings },
     /// Add a deck (only host allowed)
     AddDeck { deckcode: String },
     /// Fetches all current decks from the api, use for a force update (only host allowed)
     FetchDecks,
-    /// Clients kicks a player (usually the host)
+    /// Client kicks a player (usually the host)
     Kick { kicked: Uuid },
+    /// Client ends a running game (usually the host)
+    EndGame,
     /// Client starts a new round (usually the host)
     StartRound,
     /// Client restarts the round (usually the host)
@@ -127,13 +129,22 @@ pub struct PlayerInfo {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Player {
+    secret: Uuid,
     info: PlayerInfo,
     cards: Vec<WhiteCard>,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Credentials {
+    pub name: String,
+    pub id: Uuid,
+    pub secret: Uuid,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Settings {
-    pub end_condition: EndCondition,
+    pub max_rounds: Option<u32>,
+    pub max_points: Option<u32>,
     pub max_submitting_time_secs: Option<Scaling>,
     pub max_judging_time_secs: Option<u64>,
     pub wait_time_secs: Option<u64>,
@@ -144,7 +155,8 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            end_condition: EndCondition::default(),
+            max_rounds: Some(10),
+            max_points: Some(4),
             max_submitting_time_secs: Some(Scaling::default()),
             max_judging_time_secs: Some(30),
             wait_time_secs: Some(5),
@@ -154,27 +166,18 @@ impl Default for Settings {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(tag = "type", content = "limit")]
-pub enum EndCondition {
-    MaxRounds(u32),
-    MaxPoints(u32),
-}
+impl Settings {
+    pub fn end_condition_reached(&self, lobby_data: &LobbyData) -> bool {
+        let max_rounds_reached = match self.max_points {
+            Some(limit) => lobby_data.round >= limit,
+            None => false,
+        };
+        let max_points_reached = match self.max_points {
+            Some(limit) => lobby_data.players.iter().any(|p| p.1.info.points >= limit),
+            None => false,
+        };
 
-impl Default for EndCondition {
-    fn default() -> Self {
-        Self::MaxRounds(10)
-    }
-}
-
-impl EndCondition {
-    fn is_reached(&self, lobby_data: &LobbyData) -> bool {
-        match &self {
-            EndCondition::MaxRounds(limit) => lobby_data.round >= *limit,
-            EndCondition::MaxPoints(limit) => {
-                lobby_data.players.iter().any(|p| p.1.info.points >= *limit)
-            }
-        }
+        max_rounds_reached || max_points_reached
     }
 }
 

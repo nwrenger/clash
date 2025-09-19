@@ -2,6 +2,7 @@
 	import api from '$lib/api';
 	import { Modal } from '@skeletonlabs/skeleton-svelte';
 	import type { Connection } from './+page.svelte';
+	import { Plus } from 'lucide-svelte';
 
 	interface Props {
 		connection: Connection;
@@ -20,7 +21,7 @@
 	}
 
 	function add() {
-		api.send_ws(connection.ws!, { type: 'AddDeck', data: { deckcode } });
+		api.send_ws(connection.ws!, { type: 'AddDeck', data: { deckcode: deckcode.trim() } });
 		modalClose();
 	}
 </script>
@@ -34,6 +35,7 @@
 >
 	{#snippet trigger()}
 		<button class="btn preset-filled-primary-500 w-full" title="Add a Deck" {disabled}>
+			<Plus size={20} />
 			Add
 		</button>
 	{/snippet}
@@ -50,14 +52,26 @@
 				>, copy its deck code, and paste it here.
 			</p>
 			<label class="label">
-				<span class="label-text">Deckcode</span>
-				<input class="input" bind:value={deckcode} placeholder="Input deckcode..." />
+				<span class="label-text flex items-center justify-between">
+					<span>Deckcode</span>
+					<span>
+						press <kbd class="kbd text-xs">↵</kbd> to add
+					</span>
+				</span>
+				<input
+					class="input"
+					bind:value={deckcode}
+					placeholder="Input deckcode..."
+					onkeydown={(e) => e.key === 'Enter' && deckcode.trim() && add()}
+				/>
 			</label>
 		</article>
 		<footer class="flex justify-end gap-4">
 			<button type="button" class="btn preset-tonal" onclick={modalClose}>Cancel</button>
-			<button type="button" class="btn preset-filled" onclick={add} disabled={!deckcode}>Add</button
-			>
+			<button type="button" class="btn preset-filled" onclick={add} disabled={!deckcode.trim()}>
+				<Plus size={20} />
+				Add
+			</button>
 		</footer>
 	{/snippet}
 </Modal>
