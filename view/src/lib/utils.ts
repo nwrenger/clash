@@ -162,12 +162,6 @@ function rgbToHex(r: number, g: number, b: number) {
 	return `#${h(r)}${h(g)}${h(b)}`;
 }
 
-export function randomName(): string {
-	const nouns = ['Gremlin', 'Noodle', 'Goblin', 'Pickle', 'Wombat', 'Tornado', 'Spatula'];
-	const adj = ['Chaotic', 'Spicy', 'Sneaky', 'Cosmic', 'Unhinged', 'Ludicrous', 'Quantum'];
-	return `${adj[Math.floor(Math.random() * adj.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}`;
-}
-
 export function relativeTime(tsSec: number) {
 	const d = new Date(tsSec * 1000);
 	const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
