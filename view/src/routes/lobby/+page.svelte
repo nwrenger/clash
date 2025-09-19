@@ -90,13 +90,18 @@
 	let over = $derived(lobby?.phase == 'GameOver');
 
 	onDestroy(() => {
-		connection.ws?.close();
+		// Gracefully close and mark disconnected, but don't auto-rejoin
+		try {
+			connection.ws?.close();
+		} finally {
+			connection.connected = false;
+		}
 	});
 
 	onMount(() => {
 		lobby.id = page.url.searchParams.get('id') || '';
 
-		// get stored data if already logged in
+		// Get stored data if already logged in
 		own.logged_in = $session?.lobby_id == lobby.id;
 		if ($session && own.logged_in) {
 			own.credentials = $session.credentials;
@@ -106,11 +111,14 @@
 	});
 
 	function connect() {
-		// Making sure that there aren't any clients which are mulitple times connected (which is possible)
-		if (connection.ws) {
-			connection.connected = false;
-			connection.ws.close();
-			connection.ws = undefined;
+		// Avoid duplicate sockets
+		if (
+			connection.ws &&
+			(connection.ws.readyState === WebSocket.OPEN ||
+				connection.ws.readyState === WebSocket.CONNECTING)
+		) {
+			console.log(connection);
+			return;
 		}
 
 		connection.ws = api.connect_ws(lobby.id as api.Uuid);
@@ -122,6 +130,7 @@
 		};
 
 		connection.ws.onerror = () => {
+			// If lobby truly doesn't exist, show error. Otherwise, onclose will handle cleanup
 			show_error({ kind: 'LobbyNotFound' });
 		};
 
@@ -130,7 +139,11 @@
 			handleIncommingEvent(msg);
 		};
 
-		connection.ws.onclose = disconnect;
+		connection.ws.onclose = () => {
+			// Land in Loading screen (disconnected). Keep credentials/session unless kicked
+			connection.connected = false;
+			removeState();
+		};
 	}
 
 	function handleIncommingEvent(msg: api.IncommingEvent) {
@@ -321,6 +334,9 @@
 
 		if (msg.data.selected_cards) own.selected_cards = msg.data.selected_cards;
 		if (msg.data.hand) own.cards = msg.data.hand;
+
+		// We joined, but we still keep explicit-join flow for future reconnects
+		own.logged_in = true;
 	}
 
 	function onUpdateHand(msg: Extract<api.IncommingEvent, { type: 'UpdateHand' }>) {
@@ -328,13 +344,18 @@
 	}
 
 	function onTimeout() {
+		const was_joined = lobby.joined;
+
 		toaster.warning({
 			title: 'Timed Out',
-			description: 'You have been removed from the lobby due to inactivity. Reload to reconnect!'
+			description: was_joined
+				? 'You were removed due to inactivity. Use the Loading screen to reconnect.'
+				: 'Connection timed out. Use the Loading screen to reconnect.'
 		});
 
-		// Clear state directly to improve ux
-		disconnect();
+		// Keep credentials/session so the user can reconnect manually
+		closeWs();
+		removeState();
 	}
 
 	function onKick() {
@@ -343,17 +364,8 @@
 			description: 'You have been removed from the lobby by the host.'
 		});
 
-		// Clear state directly to improve ux
+		// Kick: fully clear state and credentials; user may reconnect manually and rejoin
 		disconnect();
-
-		// Close ws
-		connection.ws?.close();
-
-		// Remove remembered credentials
-		resetLogin();
-
-		// reconnect
-		connect();
 	}
 
 	function onError(msg: Extract<api.IncommingEvent, { type: 'Error' }>) {
@@ -376,24 +388,50 @@
 		$session = null;
 	}
 
-	function disconnect() {
+	function removeState() {
 		lobby.joined = false;
 		lobby.phase = undefined;
 		lobby.players = undefined;
 		lobby.settings = undefined;
+	}
+
+	function closeWs() {
 		connection.connected = false;
+		if (connection.ws) {
+			try {
+				connection.ws.onopen = null;
+				connection.ws.onmessage = null;
+				connection.ws.onclose = null;
+				connection.ws.onerror = null;
+				if (
+					connection.ws.readyState === WebSocket.OPEN ||
+					connection.ws.readyState === WebSocket.CONNECTING
+				) {
+					connection.ws.close();
+				}
+			} catch {}
+			connection.ws = undefined;
+		}
+	}
+
+	function disconnect() {
+		closeWs();
+		removeState();
+		resetLogin();
 	}
 
 	function join_lobby(e?: Event) {
 		if (!own.credentials.name.trim()) return;
-
 		if (e) e.preventDefault();
 
-		// Make sure to reconnect if an error closed the connection
-		// Like when trying to join a full or closed lobby
-		if (!connection.connected) connect();
-		// Connect and update credentials
-		api.send_ws(connection.ws!, { type: 'JoinLobby', data: { credentials: own.credentials } });
+		// Ensure we have a live connection; do not auto-join on connect
+		if (!connection.ws || connection.ws.readyState !== WebSocket.OPEN) {
+			connect();
+			return;
+		}
+
+		// Send join only when the user explicitly presses Join
+		api.send_ws(connection.ws, { type: 'JoinLobby', data: { credentials: own.credentials } });
 		$session = { lobby_id: lobby.id as api.Uuid, credentials: own.credentials };
 	}
 
@@ -402,9 +440,9 @@
 		lobby.phase = phase;
 
 		let change: number | undefined;
-		if (phase == 'RoundFinished') change = lobby.settings.wait_time_secs || undefined;
-		if (phase == 'Submitting') change = to_seconds(lobby.settings.max_submitting_time_secs, lobby);
-		if (phase == 'Judging') change = lobby.settings.max_judging_time_secs || undefined;
+		if (phase == 'RoundFinished') change = lobby.settings!.wait_time_secs || undefined;
+		if (phase == 'Submitting') change = to_seconds(lobby.settings!.max_submitting_time_secs, lobby);
+		if (phase == 'Judging') change = lobby.settings!.max_judging_time_secs || undefined;
 		round.time = { self: change };
 	}
 
@@ -443,7 +481,7 @@
 {#if joining}
 	<Joining bind:own_name={own.credentials.name} {join_lobby} />
 {:else if open}
-	<LobbyOpen {connection} {lobby} {own} {resetLogin} />
+	<LobbyOpen {connection} {lobby} {own} {disconnect} />
 {:else if gaming}
 	{@const is_czar = lobby!.players![own.credentials.id]?.is_czar || false}
 	<div class="mx-auto flex max-w-7xl flex-col items-center space-y-6 px-4 py-8">

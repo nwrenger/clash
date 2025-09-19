@@ -21,11 +21,11 @@
 		connection: Connection;
 		lobby: Lobby;
 		own: Own;
-		resetLogin: () => void;
+		disconnect: () => void;
 		shared: Shared;
 	}
 
-	let { connection, lobby, own, resetLogin, shared }: Props = $props();
+	let { connection, lobby, own, disconnect, shared }: Props = $props();
 
 	let is_host = $derived(lobby!.players![own.credentials.id]?.is_host || false);
 	let lobby_url = $derived(`${page.url.origin}/lobby?id=${lobby.id}`);
@@ -37,7 +37,7 @@
 
 	async function leave() {
 		api.send_ws(connection.ws!, { type: 'LeaveLobby' });
-		resetLogin();
+		disconnect();
 
 		// Return to homepage and making sure that the current page state won't be invalidated
 		await goto('/', { replaceState: false, invalidateAll: false });

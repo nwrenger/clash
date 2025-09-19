@@ -16,10 +16,10 @@
 		connection: Connection;
 		lobby: Lobby;
 		own: Own;
-		resetLogin: () => void;
+		disconnect: () => void;
 	}
 
-	let { connection, lobby, own, resetLogin }: Props = $props();
+	let { connection, lobby, own, disconnect }: Props = $props();
 
 	let tabs = $state('lobby');
 
@@ -51,7 +51,7 @@
 		{/snippet}
 		{#snippet content()}
 			<Tabs.Panel classes="h-full" value="lobby">
-				<LobbyPanel {connection} {lobby} {own} {resetLogin} {shared} />
+				<LobbyPanel {connection} {lobby} {own} {disconnect} {shared} />
 			</Tabs.Panel>
 			<Tabs.Panel classes="h-full" value="settings">
 				<SettingsPanel {connection} {lobby} {own} bind:shared />

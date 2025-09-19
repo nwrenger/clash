@@ -104,7 +104,8 @@
 		if (lobby?.settings?.decks) updating_decks = false;
 	});
 	$effect(() => {
-		changable_settings = deepClone(lobby?.settings);
+		// Make sure that changes are only applied after the timer ran out
+		if (!changes || !is_host) changable_settings = deepClone(lobby?.settings);
 	});
 	$effect(applySave);
 
