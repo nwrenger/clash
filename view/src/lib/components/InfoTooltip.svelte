@@ -18,7 +18,7 @@
 	base="flex items-center"
 	triggerBase="px-1"
 	contentBase="card preset-filled text-center p-4 max-w-[calc(100vw-16px)]"
-	openDelay={0}
+	openDelay={50}
 	closeDelay={50}
 	closeOnClick={false}
 	closeOnPointerDown={false}
