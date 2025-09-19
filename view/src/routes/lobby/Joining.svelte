@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { randomName } from '$lib/utils';
-	import { LogIn, Shuffle } from 'lucide-svelte';
+	import { LogIn } from 'lucide-svelte';
 	import LoginCard from '../LoginCard.svelte';
 
 	interface Props {

@@ -3,8 +3,7 @@
 	import api from '$lib/api';
 	import { session } from '$lib/state';
 	import { handle_promise } from '$lib/toaster';
-	import { randomName } from '$lib/utils';
-	import { LoaderCircle, Plus, Sparkles, Github, ExternalLink, Shuffle } from 'lucide-svelte';
+	import { LoaderCircle, Plus, Sparkles, Github, ExternalLink } from 'lucide-svelte';
 	import LoginCard from './LoginCard.svelte';
 
 	let name: string = $state('');

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { randomName } from '$lib/utils';
 	import { Shuffle } from 'lucide-svelte';
 	import type { Snippet } from 'svelte';
 
@@ -12,6 +11,12 @@
 	}
 
 	let { name = $bindable(), cta, buttonText, submit, busy }: Props = $props();
+
+	function randomName() {
+		const nouns = ['Gremlin', 'Noodle', 'Goblin', 'Pickle', 'Wombat', 'Tornado', 'Spatula'];
+		const adj = ['Chaotic', 'Spicy', 'Sneaky', 'Cosmic', 'Unhinged', 'Ludicrous', 'Quantum'];
+		name = `${adj[Math.floor(Math.random() * adj.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}`;
+	}
 </script>
 
 <div class="card preset-tonal mx-auto w-full max-w-xl overflow-hidden rounded-2xl">
@@ -42,7 +47,7 @@
 						class="btn-icon preset-tonal"
 						title="Surprise me!"
 						aria-label="Generate a random nickname"
-						onclick={() => (name = randomName())}
+						onclick={randomName}
 						disabled={busy}
 					>
 						<Shuffle size={18} />

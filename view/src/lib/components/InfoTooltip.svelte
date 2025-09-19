@@ -17,7 +17,7 @@
 	positioning={{ placement: 'top' }}
 	base="flex items-center"
 	triggerBase="px-1"
-	contentBase="card preset-filled text-center p-4 max-w-[calc(100vw-16px)]"
+	contentBase="card preset-filled text-center p-4 w-[calc(100vw-50px)] max-w-80"
 	openDelay={50}
 	closeDelay={50}
 	closeOnClick={false}
