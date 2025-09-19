@@ -57,48 +57,87 @@
 			whites += deck.whites_count;
 		}
 
-		return { blacks: blacks, whites: whites };
+		return { blacks, whites };
 	}
 
+	// ---------- NEW: string UI state for all selects ----------
 	const defaultSeconds = 90;
 	const secondsOptions = [5, 10, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150];
 
-	let submittingTimeType: string | null = $state(null);
-	let submittingTimeSeconds = $state(defaultSeconds);
+	let maxRoundsStr = $state('');
+	let maxPointsStr = $state('');
+	let waitTimeStr = $state('');
+	let maxJudgingStr = $state('');
 
+	let submittingTypeStr = $state(''); // "" | "Constant" | "Player"
+	let submittingSecondsStr = $state(String(defaultSeconds)); // string number
+
+	// Reflect server state -> string UI state
 	$effect(() => {
-		const s = changable_settings?.max_submitting_time_secs ?? null;
-		submittingTimeType = s?.type ?? null;
-		submittingTimeSeconds = s?.seconds ?? defaultSeconds;
+		const s = changable_settings;
+		maxRoundsStr = s?.max_rounds != null ? String(s.max_rounds) : '';
+		maxPointsStr = s?.max_points != null ? String(s.max_points) : '';
+		waitTimeStr = s?.wait_time_secs != null ? String(s.wait_time_secs) : '';
+		maxJudgingStr = s?.max_judging_time_secs != null ? String(s.max_judging_time_secs) : '';
+
+		const sub = s?.max_submitting_time_secs ?? null;
+		submittingTypeStr = sub?.type ?? '';
+		submittingSecondsStr = String(sub?.seconds ?? defaultSeconds);
 	});
 
-	function setSubmittingTime(value: string) {
-		submittingTimeType = value;
+	// Handlers: convert to number|null and write to changable_settings
+	function onMaxRoundsChange(e: Event) {
+		const v = (e.target as HTMLSelectElement).value;
+		maxRoundsStr = v;
+		if (!changable_settings) return;
+		changable_settings.max_rounds = v ? +v : null;
+	}
+	function onMaxPointsChange(e: Event) {
+		const v = (e.target as HTMLSelectElement).value;
+		maxPointsStr = v;
+		if (!changable_settings) return;
+		changable_settings.max_points = v ? +v : null;
+	}
+	function onWaitTimeChange(e: Event) {
+		const v = (e.target as HTMLSelectElement).value;
+		waitTimeStr = v;
+		if (!changable_settings) return;
+		changable_settings.wait_time_secs = v ? +v : null;
+	}
+	function onMaxJudgingChange(e: Event) {
+		const v = (e.target as HTMLSelectElement).value;
+		maxJudgingStr = v;
+		if (!changable_settings) return;
+		changable_settings.max_judging_time_secs = v ? +v : null;
+	}
+
+	function onSubmittingTypeChange(e: Event) {
+		const v = (e.target as HTMLSelectElement).value; // "" | "Constant" | "Player"
+		submittingTypeStr = v;
 		if (!changable_settings) return;
 
-		if (value === '') {
+		if (v === '') {
 			changable_settings.max_submitting_time_secs = null;
 		} else {
-			const secs = Number.isFinite(submittingTimeSeconds) ? submittingTimeSeconds : defaultSeconds;
+			const secs = Number.isFinite(+submittingSecondsStr) ? +submittingSecondsStr : defaultSeconds;
 			changable_settings.max_submitting_time_secs = {
-				type: value as 'Constant' | 'Player',
+				type: v as 'Constant' | 'Player',
 				seconds: secs
 			};
 		}
 	}
-
-	function setSubmittingSeconds(value: number) {
-		submittingTimeSeconds = value;
+	function onSubmittingSecondsChange(e: Event) {
+		const v = (e.target as HTMLSelectElement).value; // string number
+		submittingSecondsStr = v;
 		if (!changable_settings) return;
+		if (submittingTypeStr === '') return;
 
-		if (submittingTimeType === '') {
-			return;
-		}
 		changable_settings.max_submitting_time_secs = {
-			type: submittingTimeType as 'Constant' | 'Player',
-			seconds: value
+			type: submittingTypeStr as 'Constant' | 'Player',
+			seconds: +v
 		};
 	}
+	// ----------------------------------------------------------
 
 	$effect(() => {
 		if (lobby?.settings?.decks) updating_decks = false;
@@ -151,11 +190,6 @@
 				type: 'UpdateSettings',
 				data: { settings: changable_settings }
 			});
-	}
-
-	function blur(e: Event) {
-		const el = e.currentTarget as HTMLSelectElement;
-		el.blur();
 	}
 </script>
 
@@ -246,11 +280,9 @@
 								disabled={shared.saving}
 							>
 								{#if updating_decks}
-									<LoaderCircle size={20} class="animate-spin" />
-									Updating...
+									<LoaderCircle size={20} class="animate-spin" /> Updating...
 								{:else}
-									<Download size={20} />
-									Update All
+									<Download size={20} /> Update All
 								{/if}
 							</button>
 							<AddDeck {connection} disabled={shared.saving} />
@@ -258,23 +290,25 @@
 					</div>
 				{/if}
 			</div>
-			<div class="grid w-full space-y-3 sm:grid-cols-2 sm:gap-1.5 sm:space-y-0">
+
+			<div class="w/full grid space-y-3 sm:grid-cols-2 sm:gap-1.5 sm:space-y-0">
 				<label class="label">
 					<span class="label-text flex items-center justify-start">
 						<span>Max Rounds</span>
 						<InfoTooltip description="The game ends once the round count reaches this maximum" />
 					</span>
 
+					<!-- CHANGED -->
 					<select
-						onchange={blur}
 						class="select"
-						bind:value={changable_settings.max_rounds}
+						bind:value={maxRoundsStr}
+						onchange={onMaxRoundsChange}
 						disabled={!is_host}
 					>
-						<option value={null}>None</option>
+						<option value="">None</option>
 						{#each Array.from({ length: 10 }) as _, i}
 							{@const round = (i + 1) * 5}
-							<option value={round}>{round}</option>
+							<option value={String(round)}>{round}</option>
 						{/each}
 					</select>
 				</label>
@@ -286,15 +320,15 @@
 					</span>
 
 					<select
-						onchange={blur}
 						class="select"
-						bind:value={changable_settings.max_points}
+						bind:value={maxPointsStr}
+						onchange={onMaxPointsChange}
 						disabled={!is_host}
 					>
-						<option value={null}>None</option>
+						<option value="">None</option>
 						{#each Array.from({ length: 10 }) as _, i}
 							{@const points = (i + 1) * 2}
-							<option value={points}>{points}</option>
+							<option value={String(points)}>{points}</option>
 						{/each}
 					</select>
 				</label>
@@ -326,14 +360,14 @@
 					</span>
 
 					<select
-						onchange={blur}
 						class="select"
-						bind:value={changable_settings.wait_time_secs}
+						bind:value={waitTimeStr}
+						onchange={onWaitTimeChange}
 						disabled={!is_host}
 					>
-						<option value={null}>None</option>
+						<option value="">None</option>
 						{#each [5, 10, 15, 20] as s}
-							<option value={s}>{s}s</option>
+							<option value={String(s)}>{s}s</option>
 						{/each}
 					</select>
 				</label>
@@ -353,35 +387,32 @@
 					</span>
 
 					<div class="input-group grid-cols-[auto_1fr_auto] {!is_host ? 'opacity-50' : ''}">
+						<!-- CHANGED -->
 						<select
 							class="ig-select opacity-100!"
-							bind:value={submittingTimeType}
-							onchange={(e) => {
-								blur(e);
-								setSubmittingTime((e.target as HTMLSelectElement).value);
-							}}
+							bind:value={submittingTypeStr}
+							onchange={onSubmittingTypeChange}
 							disabled={!is_host}
 						>
-							<option value={null}>None</option>
+							<option value="">None</option>
 							<option value="Constant">Constant</option>
 							<option value="Player">Each Player &nbsp;</option>
 						</select>
 
+						<!-- CHANGED -->
 						<select
 							class="ig-select opacity-100!"
-							bind:value={submittingTimeSeconds}
-							onchange={(e) => {
-								blur(e);
-								setSubmittingSeconds(+(e.target as HTMLSelectElement).value);
-							}}
-							disabled={!is_host || !submittingTimeType}
+							bind:value={submittingSecondsStr}
+							onchange={onSubmittingSecondsChange}
+							disabled={!is_host || submittingTypeStr === ''}
 						>
 							{#each secondsOptions as seconds}
-								<option value={seconds}>{seconds}s</option>
+								<option value={String(seconds)}>{seconds}s</option>
 							{/each}
 						</select>
 					</div>
 				</label>
+
 				<label class="label">
 					<span class="label-text flex items-center justify-start">
 						<span>Max Judging Time</span>
@@ -389,18 +420,19 @@
 					</span>
 
 					<select
-						onchange={blur}
 						class="select"
-						bind:value={changable_settings.max_judging_time_secs}
+						bind:value={maxJudgingStr}
+						onchange={onMaxJudgingChange}
 						disabled={!is_host}
 					>
-						<option value={null}>None</option>
+						<option value="">None</option>
 						{#each [15, 30, 45, 60, 75, 90, 105, 120] as s}
-							<option value={s}>{s}s</option>
+							<option value={String(s)}>{s}s</option>
 						{/each}
 					</select>
 				</label>
 			</div>
+
 			{#if is_host}
 				<div class="sticky bottom-0 z-50 mb-8 flex w-full justify-center">
 					<span class="badge preset-tonal backdrop-blur-lg">
