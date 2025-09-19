@@ -332,9 +332,9 @@
 						/>
 					</span>
 
-					<div class="input-group grid-cols-[auto_1fr_auto]">
+					<div class="input-group grid-cols-[auto_1fr_auto] {!is_host ? 'opacity-50' : ''}">
 						<select
-							class="ig-select"
+							class="ig-select opacity-100!"
 							bind:value={submittingTimeType}
 							onchange={(e) => setSubmittingTime((e.target as HTMLSelectElement).value)}
 							disabled={!is_host}
@@ -345,7 +345,7 @@
 						</select>
 
 						<select
-							class="ig-select"
+							class="ig-select opacity-100!"
 							bind:value={submittingTimeSeconds}
 							onchange={(e) => setSubmittingSeconds(+(e.target as HTMLSelectElement).value)}
 							disabled={!is_host || !submittingTimeType}
