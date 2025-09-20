@@ -49,7 +49,7 @@
 	<div class="badge preset-tonal flex-wrap rounded-full">
 		<span class="inline-flex items-center gap-1"><Sparkles size={14} /> now live</span>
 		<span class="mx-2 opacity-40">•</span>
-		<span>free to play</span>
+		<span>privacy-friendly</span>
 	</div>
 
 	<h1 class="h2 text-center">
@@ -89,8 +89,8 @@
 
 		<ul class="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:justify-evenly">
 			<li class="badge preset-filled">Open Source</li>
-			<li class="badge preset-filled-secondary-500">Rust Backend</li>
-			<li class="badge preset-filled-tertiary-500">Svelte Frontend</li>
+			<li class="badge bg-[#dea584] text-[#7a3e00]">Rust Backend</li>
+			<li class="badge bg-[#ff3e00] text-[#431407]">Svelte Frontend</li>
 		</ul>
 	</div>
 
