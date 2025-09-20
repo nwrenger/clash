@@ -85,7 +85,7 @@ We recommend keeping lobby sizes below 5,000 for the best experience.
 
 ## Contributing & Issues
 
-CLASH is in **active beta**. We welcome:
+Although CLASH is out of **beta**, I still welcome:
 
 - Bug reports
 - Feature requests
