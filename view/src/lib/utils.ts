@@ -164,7 +164,8 @@ function rgbToHex(r: number, g: number, b: number) {
 
 export function relativeTime(tsSec: number) {
 	const d = new Date(tsSec * 1000);
-	const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+	const locale = new Intl.Locale('en');
+	const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
 	const diffMs = d.getTime() - Date.now();
 
 	const minute = 60_000;

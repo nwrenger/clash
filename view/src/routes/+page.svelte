@@ -89,8 +89,8 @@
 
 		<ul class="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:justify-evenly">
 			<li class="badge preset-filled">Open Source</li>
-			<li class="badge bg-[#dea584] text-[#7a3e00]">Rust Backend</li>
-			<li class="badge bg-[#ff3e00] text-[#431407]">Svelte Frontend</li>
+			<li class="badge bg-[#dea584] text-[#61351a]">Rust Backend</li>
+			<li class="badge bg-[#ff3e00] text-[#710000]">Svelte Frontend</li>
 		</ul>
 	</div>
 
