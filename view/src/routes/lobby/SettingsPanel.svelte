@@ -60,34 +60,8 @@
 		return { blacks, whites };
 	}
 
-	// ---- constants for submitting time ----
 	const defaultSeconds = 90;
 	const secondsOptions = [5, 10, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150];
-
-	// ---------- change handlers (no bind) ----------
-	function onMaxRoundsChange(e: Event) {
-		if (!changable_settings) return;
-		const v = (e.target as HTMLSelectElement).value;
-		changable_settings.max_rounds = v ? +v : null;
-	}
-
-	function onMaxPointsChange(e: Event) {
-		if (!changable_settings) return;
-		const v = (e.target as HTMLSelectElement).value;
-		changable_settings.max_points = v ? +v : null;
-	}
-
-	function onWaitTimeChange(e: Event) {
-		if (!changable_settings) return;
-		const v = (e.target as HTMLSelectElement).value;
-		changable_settings.wait_time_secs = v ? +v : null;
-	}
-
-	function onMaxJudgingChange(e: Event) {
-		if (!changable_settings) return;
-		const v = (e.target as HTMLSelectElement).value;
-		changable_settings.max_judging_time_secs = v ? +v : null;
-	}
 
 	function onSubmittingTypeChange(e: Event) {
 		if (!changable_settings) return;
@@ -113,7 +87,6 @@
 			seconds: +v
 		};
 	}
-	// --------------------------------------
 
 	$effect(() => {
 		if (lobby?.settings?.decks) updating_decks = false;
@@ -274,19 +247,11 @@
 						<InfoTooltip description="The game ends once the round count reaches this maximum" />
 					</span>
 
-					<!-- NO BIND: value derived from changable_settings -->
-					<select
-						class="select"
-						disabled={!is_host}
-						value={changable_settings?.max_rounds != null
-							? String(changable_settings.max_rounds)
-							: ''}
-						onchange={onMaxRoundsChange}
-					>
-						<option value="">None</option>
+					<select class="select" bind:value={changable_settings.max_rounds} disabled={!is_host}>
+						<option value={null}>None</option>
 						{#each Array.from({ length: 10 }) as _, i}
 							{@const round = (i + 1) * 5}
-							<option value={String(round)}>{round}</option>
+							<option value={round}>{round}</option>
 						{/each}
 					</select>
 				</label>
@@ -297,18 +262,11 @@
 						<InfoTooltip description="The game ends once a player's points reach this maximum" />
 					</span>
 
-					<select
-						class="select"
-						disabled={!is_host}
-						value={changable_settings?.max_points != null
-							? String(changable_settings.max_points)
-							: ''}
-						onchange={onMaxPointsChange}
-					>
-						<option value="">None</option>
+					<select class="select" bind:value={changable_settings.max_points} disabled={!is_host}>
+						<option value={null}>None</option>
 						{#each Array.from({ length: 10 }) as _, i}
 							{@const points = (i + 1) * 2}
-							<option value={String(points)}>{points}</option>
+							<option value={points}>{points}</option>
 						{/each}
 					</select>
 				</label>
@@ -339,17 +297,10 @@
 						/>
 					</span>
 
-					<select
-						class="select"
-						disabled={!is_host}
-						value={changable_settings?.wait_time_secs != null
-							? String(changable_settings.wait_time_secs)
-							: ''}
-						onchange={onWaitTimeChange}
-					>
-						<option value="">None</option>
+					<select class="select" bind:value={changable_settings.wait_time_secs} disabled={!is_host}>
+						<option value={null}>None</option>
 						{#each [5, 10, 15, 20] as s}
-							<option value={String(s)}>{s}s</option>
+							<option value={s}>{s}s</option>
 						{/each}
 					</select>
 				</label>
@@ -405,15 +356,12 @@
 
 					<select
 						class="select"
+						bind:value={changable_settings.max_judging_time_secs}
 						disabled={!is_host}
-						value={changable_settings?.max_judging_time_secs != null
-							? String(changable_settings.max_judging_time_secs)
-							: ''}
-						onchange={onMaxJudgingChange}
 					>
-						<option value="">None</option>
+						<option value={null}>None</option>
 						{#each [15, 30, 45, 60, 75, 90, 105, 120] as s}
-							<option value={String(s)}>{s}s</option>
+							<option value={s}>{s}s</option>
 						{/each}
 					</select>
 				</label>
