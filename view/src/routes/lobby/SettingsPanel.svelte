@@ -8,7 +8,7 @@
 	import { Tween } from 'svelte/motion';
 	import NumberInput from '$lib/components/NumberInput.svelte';
 	import type { Shared } from './LobbyOpen.svelte';
-	import InfoTooltip from '$lib/components/InfoTooltip.svelte';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 
 	interface Props {
 		connection: Connection;
@@ -146,9 +146,18 @@
 	{#if changable_settings}
 		<div class="space-y-3 px-2">
 			<div class="label">
-				<span class="label-text flex items-center justify-start">
-					<span> Decks </span>
-					<InfoTooltip description="Enable the card sets you want to include in the game" />
+				<span class="label-text flex items-center justify-between">
+					<span class="flex items-center">
+						<span>Decks</span>
+						<Tooltip description="Enable the card sets you want to include in the game" />
+					</span>
+					<span class="text-warning-500 flex items-center">
+						<span>User Generated Content</span>
+						<Tooltip
+							preset="preset-filled-warning-500"
+							description="These decks are created and shared by other users; I do not review or endorse them"
+						/>
+					</span>
 				</span>
 
 				<!-- deck list -->
@@ -217,9 +226,9 @@
 			<div class="w-full space-y-2">
 				{#if is_host}
 					<div class="label">
-						<span class="label-text flex items-center justify-start">
+						<span class="label-text flex items-center">
 							<span>Manage Decks</span>
-							<InfoTooltip description="Update or Add card sets made by the community" />
+							<Tooltip description="Update or Add card sets made by the community" />
 						</span>
 						<div class="grid gap-1.5 sm:grid-cols-2">
 							<button
@@ -242,9 +251,9 @@
 
 			<div class="w/full grid space-y-3 sm:grid-cols-2 sm:gap-1.5 sm:space-y-0">
 				<label class="label">
-					<span class="label-text flex items-center justify-start">
+					<span class="label-text flex items-center">
 						<span>Max Rounds</span>
-						<InfoTooltip description="The game ends once the round count reaches this maximum" />
+						<Tooltip description="The game ends once the round count reaches this maximum" />
 					</span>
 
 					<select class="select" bind:value={changable_settings.max_rounds} disabled={!is_host}>
@@ -257,9 +266,9 @@
 				</label>
 
 				<label class="label">
-					<span class="label-text flex items-center justify-start">
+					<span class="label-text flex items-center">
 						<span>Max Points</span>
-						<InfoTooltip description="The game ends once a player's points reach this maximum" />
+						<Tooltip description="The game ends once a player's points reach this maximum" />
 					</span>
 
 					<select class="select" bind:value={changable_settings.max_points} disabled={!is_host}>
@@ -274,9 +283,9 @@
 
 			<div class="grid w-full space-y-3 sm:grid-cols-2 sm:gap-1.5 sm:space-y-0">
 				<label class="label">
-					<span class="label-text flex items-center justify-start">
+					<span class="label-text flex items-center">
 						<span>Max Players</span>
-						<InfoTooltip description="The maximum number of players allowed to join this lobby" />
+						<Tooltip description="The maximum number of players allowed to join this lobby" />
 					</span>
 
 					<NumberInput
@@ -290,9 +299,9 @@
 				</label>
 
 				<label class="label">
-					<span class="label-text flex items-center justify-start">
+					<span class="label-text flex items-center">
 						<span>Wait Time</span>
-						<InfoTooltip
+						<Tooltip
 							description="The time between each round; avoid setting this too high or it may become annoying"
 						/>
 					</span>
@@ -312,9 +321,9 @@
 					: ''}"
 			>
 				<label class="label">
-					<span class="label-text flex items-center justify-start">
+					<span class="label-text flex items-center">
 						<span>Max Submitting Time</span>
-						<InfoTooltip
+						<Tooltip
 							description="The maximum time players have to submit their cards; can be set to a fixed duration or scale with the number of players"
 						/>
 					</span>
@@ -349,9 +358,9 @@
 				</label>
 
 				<label class="label">
-					<span class="label-text flex items-center justify-start">
+					<span class="label-text flex items-center">
 						<span>Max Judging Time</span>
-						<InfoTooltip description="The maximum time the czar has to pick a winning card" />
+						<Tooltip description="The maximum time the czar has to pick a winning card" />
 					</span>
 
 					<select
