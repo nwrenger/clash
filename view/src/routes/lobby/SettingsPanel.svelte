@@ -60,84 +60,60 @@
 		return { blacks, whites };
 	}
 
-	// ---------- NEW: string UI state for all selects ----------
+	// ---- constants for submitting time ----
 	const defaultSeconds = 90;
 	const secondsOptions = [5, 10, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150];
 
-	let maxRoundsStr = $state('');
-	let maxPointsStr = $state('');
-	let waitTimeStr = $state('');
-	let maxJudgingStr = $state('');
-
-	let submittingTypeStr = $state(''); // "" | "Constant" | "Player"
-	let submittingSecondsStr = $state(String(defaultSeconds)); // string number
-
-	// Reflect server state -> string UI state
-	$effect(() => {
-		const s = changable_settings;
-		maxRoundsStr = s?.max_rounds != null ? String(s.max_rounds) : '';
-		maxPointsStr = s?.max_points != null ? String(s.max_points) : '';
-		waitTimeStr = s?.wait_time_secs != null ? String(s.wait_time_secs) : '';
-		maxJudgingStr = s?.max_judging_time_secs != null ? String(s.max_judging_time_secs) : '';
-
-		const sub = s?.max_submitting_time_secs ?? null;
-		submittingTypeStr = sub?.type ?? '';
-		submittingSecondsStr = String(sub?.seconds ?? defaultSeconds);
-	});
-
-	// Handlers: convert to number|null and write to changable_settings
+	// ---------- change handlers (no bind) ----------
 	function onMaxRoundsChange(e: Event) {
-		const v = (e.target as HTMLSelectElement).value;
-		maxRoundsStr = v;
 		if (!changable_settings) return;
+		const v = (e.target as HTMLSelectElement).value;
 		changable_settings.max_rounds = v ? +v : null;
 	}
+
 	function onMaxPointsChange(e: Event) {
-		const v = (e.target as HTMLSelectElement).value;
-		maxPointsStr = v;
 		if (!changable_settings) return;
+		const v = (e.target as HTMLSelectElement).value;
 		changable_settings.max_points = v ? +v : null;
 	}
+
 	function onWaitTimeChange(e: Event) {
-		const v = (e.target as HTMLSelectElement).value;
-		waitTimeStr = v;
 		if (!changable_settings) return;
+		const v = (e.target as HTMLSelectElement).value;
 		changable_settings.wait_time_secs = v ? +v : null;
 	}
+
 	function onMaxJudgingChange(e: Event) {
-		const v = (e.target as HTMLSelectElement).value;
-		maxJudgingStr = v;
 		if (!changable_settings) return;
+		const v = (e.target as HTMLSelectElement).value;
 		changable_settings.max_judging_time_secs = v ? +v : null;
 	}
 
 	function onSubmittingTypeChange(e: Event) {
-		const v = (e.target as HTMLSelectElement).value; // "" | "Constant" | "Player"
-		submittingTypeStr = v;
 		if (!changable_settings) return;
-
+		const v = (e.target as HTMLSelectElement).value; // "" | "Constant" | "Player"
 		if (v === '') {
 			changable_settings.max_submitting_time_secs = null;
 		} else {
-			const secs = Number.isFinite(+submittingSecondsStr) ? +submittingSecondsStr : defaultSeconds;
+			const currentSecs = changable_settings.max_submitting_time_secs?.seconds ?? defaultSeconds;
 			changable_settings.max_submitting_time_secs = {
 				type: v as 'Constant' | 'Player',
-				seconds: secs
+				seconds: currentSecs
 			};
 		}
 	}
-	function onSubmittingSecondsChange(e: Event) {
-		const v = (e.target as HTMLSelectElement).value; // string number
-		submittingSecondsStr = v;
-		if (!changable_settings) return;
-		if (submittingTypeStr === '') return;
 
+	function onSubmittingSecondsChange(e: Event) {
+		if (!changable_settings) return;
+		const v = (e.target as HTMLSelectElement).value; // string number
+		const cur = changable_settings.max_submitting_time_secs;
+		if (!cur) return; // seconds only applies if a type is chosen
 		changable_settings.max_submitting_time_secs = {
-			type: submittingTypeStr as 'Constant' | 'Player',
+			type: cur.type,
 			seconds: +v
 		};
 	}
-	// ----------------------------------------------------------
+	// --------------------------------------
 
 	$effect(() => {
 		if (lobby?.settings?.decks) updating_decks = false;
@@ -298,12 +274,14 @@
 						<InfoTooltip description="The game ends once the round count reaches this maximum" />
 					</span>
 
-					<!-- CHANGED -->
+					<!-- NO BIND: value derived from changable_settings -->
 					<select
 						class="select"
-						bind:value={maxRoundsStr}
-						onchange={onMaxRoundsChange}
 						disabled={!is_host}
+						value={changable_settings?.max_rounds != null
+							? String(changable_settings.max_rounds)
+							: ''}
+						onchange={onMaxRoundsChange}
 					>
 						<option value="">None</option>
 						{#each Array.from({ length: 10 }) as _, i}
@@ -321,9 +299,11 @@
 
 					<select
 						class="select"
-						bind:value={maxPointsStr}
-						onchange={onMaxPointsChange}
 						disabled={!is_host}
+						value={changable_settings?.max_points != null
+							? String(changable_settings.max_points)
+							: ''}
+						onchange={onMaxPointsChange}
 					>
 						<option value="">None</option>
 						{#each Array.from({ length: 10 }) as _, i}
@@ -361,9 +341,11 @@
 
 					<select
 						class="select"
-						bind:value={waitTimeStr}
-						onchange={onWaitTimeChange}
 						disabled={!is_host}
+						value={changable_settings?.wait_time_secs != null
+							? String(changable_settings.wait_time_secs)
+							: ''}
+						onchange={onWaitTimeChange}
 					>
 						<option value="">None</option>
 						{#each [5, 10, 15, 20] as s}
@@ -387,24 +369,26 @@
 					</span>
 
 					<div class="input-group grid-cols-[auto_1fr_auto] {!is_host ? 'opacity-50' : ''}">
-						<!-- CHANGED -->
+						<!-- Type -->
 						<select
-							class="ig-select opacity-100!"
-							bind:value={submittingTypeStr}
-							onchange={onSubmittingTypeChange}
+							class="ig-select {!is_host ? 'opacity-100!' : ''}"
 							disabled={!is_host}
+							value={changable_settings?.max_submitting_time_secs?.type ?? ''}
+							onchange={onSubmittingTypeChange}
 						>
 							<option value="">None</option>
 							<option value="Constant">Constant</option>
 							<option value="Player">Each Player &nbsp;</option>
 						</select>
 
-						<!-- CHANGED -->
+						<!-- Seconds -->
 						<select
-							class="ig-select opacity-100!"
-							bind:value={submittingSecondsStr}
+							class="ig-select {!is_host ? 'opacity-100!' : ''}"
+							disabled={!is_host || !changable_settings?.max_submitting_time_secs}
+							value={String(
+								changable_settings?.max_submitting_time_secs?.seconds ?? defaultSeconds
+							)}
 							onchange={onSubmittingSecondsChange}
-							disabled={!is_host || submittingTypeStr === ''}
 						>
 							{#each secondsOptions as seconds}
 								<option value={String(seconds)}>{seconds}s</option>
@@ -421,9 +405,11 @@
 
 					<select
 						class="select"
-						bind:value={maxJudgingStr}
-						onchange={onMaxJudgingChange}
 						disabled={!is_host}
+						value={changable_settings?.max_judging_time_secs != null
+							? String(changable_settings.max_judging_time_secs)
+							: ''}
+						onchange={onMaxJudgingChange}
 					>
 						<option value="">None</option>
 						{#each [15, 30, 45, 60, 75, 90, 105, 120] as s}
