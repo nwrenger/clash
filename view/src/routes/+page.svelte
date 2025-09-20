@@ -115,4 +115,10 @@
 			<p>House rules? Custom packs? Tweak away.</p>
 		</div>
 	</div>
+
+	<div class="pt-4 text-center text-xs">
+		<a href="https://nwrenger.dev/privacy-policy" class="anchor text-surface-500">
+			Privacy Policy
+		</a>
+	</div>
 </div>
