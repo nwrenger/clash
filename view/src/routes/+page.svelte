@@ -97,8 +97,8 @@
 	<!-- feature bites -->
 	<div class="grid w-full max-w-5xl grid-cols-1 gap-4 pt-6 sm:grid-cols-2 md:grid-cols-4">
 		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-[2px]">
-			<h3 class="font-semibold">No accounts</h3>
-			<p>Pick a nickname and play. No logins, no hassle!</p>
+			<h3 class="font-semibold">Privacy First</h3>
+			<p>No tracking, no accounts. Pick a nick and play!</p>
 		</div>
 		<div
 			class="card preset-tonal space-y-1 p-5 transition will-change-transform hover:-translate-y-[2px]"
@@ -117,8 +117,6 @@
 	</div>
 
 	<div class="pt-4 text-center text-xs">
-		<a href="https://nwrenger.dev/privacy-policy" class="anchor text-surface-500">
-			Privacy Policy
-		</a>
+		<a href="https://nwrenger.dev/privacy-policy" class="anchor">Privacy Policy</a>
 	</div>
 </div>
