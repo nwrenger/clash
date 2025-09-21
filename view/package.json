@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
+		"postbuild": "bunx svelte-sitemap -d https://clash.nwrenger.dev -i '404.html' -c weekly -r",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -32,6 +33,7 @@
 		"svelte": "^5.39.2",
 		"svelte-check": "^4.3.1",
 		"svelte-persisted-store": "^0.12.0",
+		"svelte-sitemap": "^2.7.1",
 		"tailwindcss": "^4.1.13",
 		"typescript": "^5.9.2",
 		"vite": "^7.1.6"
