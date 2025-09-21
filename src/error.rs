@@ -6,7 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(tag = "kind", content = "value")]
 pub enum Error {
-    /// During the login sequenze malformed data was send
+    /// During the login sequenze malformed data was send or the provided username/secret is wrong
     LobbyLogin,
     /// The lobby is closed (a game is going on), joining is not possible
     LobbyClosed,

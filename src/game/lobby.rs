@@ -287,7 +287,7 @@ impl Lobby {
 
         if let Some(player) = re_joining {
             if player.info.name != credentials.name || player.secret != credentials.secret {
-                return Err(Error::Unauthorized);
+                return Err(Error::LobbyLogin);
             }
 
             if let Some((_, handle)) = self.disconnect_timers.remove(&credentials.id) {

@@ -63,8 +63,8 @@ function error_msg(error: api.Error): Options {
 	switch (error.kind) {
 		case 'LobbyLogin':
 			return {
-				title: 'Lobby couldn’t be joined',
-				description: `You’re trying to join a lobby with malformed data. Try reloading the Website!`
+				title: `Lobby couldn't be joined`,
+				description: `The login details for this lobby aren't valid. Try reloading the page and joining again!`
 			};
 		case 'LobbyClosed':
 			return {
@@ -78,8 +78,8 @@ function error_msg(error: api.Error): Options {
 			};
 		case 'LobbyStart':
 			return {
-				title: `Lobby couldn’t be started`,
-				description: `We couldn’t start the lobby because your configuration, or having only one player in the lobby, would leave the game in an unplayable state.`
+				title: `Lobby couldn't be started`,
+				description: `We couldn't start the lobby because your configuration, or having only one player in the lobby, would leave the game in an unplayable state.`
 			};
 		case 'LobbyNotFound':
 			return {
