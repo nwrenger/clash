@@ -1,6 +1,5 @@
 <script lang="ts">
 	import api from '$lib/api';
-	import { Fullscreen } from 'lucide-svelte';
 	import ImageModal from './ImageModal.svelte';
 
 	interface Props {
@@ -24,8 +23,10 @@
 	{#if is_image}
 		<ImageModal {image_url} />
 	{/if}
+
 	<!-- Card frame and holo pattern overlay -->
 	<div class="absolute inset-0 rounded-xl bg-gradient-to-br from-white/10 to-black/10"></div>
+
 	<!-- Card content -->
 	<div class="relative z-10 flex h-full flex-col items-center justify-center p-2">
 		{#if is_image}

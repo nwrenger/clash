@@ -75,11 +75,17 @@ namespace api {
 	export type Scaling = { type: 'Player'; seconds: number } | { type: 'Constant'; seconds: number };
 
 	export interface DeckInfo {
+		meta: DeckMeta;
+		enabled: boolean;
+	}
+
+	export interface DeckMeta {
 		name: string;
 		deckcode: string;
+		language: string;
+		nsfw: boolean;
 		blacks_count: number;
 		whites_count: number;
-		enabled: boolean;
 		fetched_at: number;
 	}
 

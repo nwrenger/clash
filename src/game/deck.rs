@@ -9,26 +9,33 @@ use crate::{
 };
 use rand::{rng, seq::IteratorRandom};
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use serde_json;
 use tokio::{fs, io::AsyncWriteExt};
 
+const API_BASE: &str = "https://api.crcast.cc/v1";
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DeckInfo {
-    pub name: String,
-    pub deckcode: String,
-    pub blacks_count: usize,
-    pub whites_count: usize,
+    pub meta: DeckMeta,
     pub enabled: bool,
-    pub fetched_at: u64,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Deck {
-    pub name: String,
-    pub deckcode: String,
+    pub meta: DeckMeta,
     pub blacks: Vec<BlackCard>,
     pub whites: Vec<WhiteCard>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DeckMeta {
+    pub name: String,
+    pub deckcode: String,
+    pub language: String,
+    pub nsfw: bool,
+    pub blacks_count: usize,
+    pub whites_count: usize,
     #[serde(default = "empty_timestamp")]
     pub fetched_at: u64,
 }
@@ -52,7 +59,7 @@ impl Deck {
         cache
     }
 
-    /// Try load a cached deck from disk. Maybe useful sometime.
+    /// Try load a cached deck from disk.
     async fn load_cache(cache: &Path, code: &str) -> Result<Self> {
         let path = Self::cache_file_path(cache, code);
         let data = fs::read_to_string(&path).await?;
@@ -62,7 +69,7 @@ impl Deck {
 
     /// Save a deck to disk cache.
     pub async fn save(&self, cache: &Path) -> Result<()> {
-        let path = Self::cache_file_path(cache, &self.deckcode);
+        let path = Self::cache_file_path(cache, &self.meta.deckcode);
         let mut f = fs::File::create(&path).await?;
         let data = serde_json::to_string_pretty(self)?;
         f.write_all(data.as_bytes()).await?;
@@ -71,33 +78,29 @@ impl Deck {
 
     /// Fetch from crcast.cc and convert into our `Deck`
     pub async fn fetch(code: &str) -> Result<Deck> {
-        let url = format!("https://api.crcast.cc/v1/cc/decks/{}/all", code);
+        let url = format!("{API_BASE}/decks/{code}");
         let client = Client::new();
         let resp = client
             .get(&url)
             .send()
             .await?
             .error_for_status()?
-            .json::<CrCastResponse>()
+            .json::<CrCastApiResponse>()
             .await?;
 
         let mut deck: Deck = resp.into();
-        deck.fetched_at = now();
+        deck.meta.fetched_at = now();
 
         Ok(deck)
     }
 
     /// To format decks into the DeckInfo used in Settings
-    fn into_info(decks: Vec<Deck>, last_info: Option<Vec<DeckInfo>>) -> Vec<DeckInfo> {
+    fn into_infos(decks: Vec<Deck>, last_info: Option<Vec<DeckInfo>>) -> Vec<DeckInfo> {
         let mut infos: Vec<DeckInfo> = decks
             .into_iter()
             .map(|d| DeckInfo {
-                name: d.name.clone(),
-                deckcode: d.deckcode.clone(),
-                blacks_count: d.blacks.len(),
-                whites_count: d.whites.len(),
+                meta: d.meta.clone(),
                 enabled: false,
-                fetched_at: d.fetched_at,
             })
             .collect();
 
@@ -107,7 +110,7 @@ impl Deck {
                 if let Some((i, _)) = infos
                     .iter()
                     .enumerate()
-                    .find(|(_i, d)| d.deckcode == before.deckcode)
+                    .find(|(_i, d)| d.meta.deckcode == before.meta.deckcode)
                 {
                     infos[i].enabled = before.enabled;
                 }
@@ -117,26 +120,22 @@ impl Deck {
         infos
     }
 
-    /// Lists all downloaded deck infos
-    ///
-    /// Simply loading them from disk
+    /// Lists all downloaded deck infos (simply loading from disk)
     pub async fn get_all_cached_info(
         cache: &PathBuf,
         last_info: Option<Vec<DeckInfo>>,
     ) -> Result<Vec<DeckInfo>> {
         let all = Deck::get_all_cached(cache).await?;
-        Ok(Self::into_info(all, last_info))
+        Ok(Self::into_infos(all, last_info))
     }
 
-    /// Lists all downloaded decks
-    ///
-    /// First updating and then loading them from disk
+    /// Lists all downloaded deck infos (first updating, then loading)
     pub async fn update_all_cached_info(
         cache: &PathBuf,
         last_info: Option<Vec<DeckInfo>>,
     ) -> Result<Vec<DeckInfo>> {
         let all = Deck::update_all_cached(cache).await?;
-        Ok(Self::into_info(all, last_info))
+        Ok(Self::into_infos(all, last_info))
     }
 
     /// Helper for reading cached folder and returning decks
@@ -160,22 +159,18 @@ impl Deck {
         Ok(decks)
     }
 
-    /// Lists all downloaded decks
-    ///
-    /// Simply loading them from disk
+    /// Lists all downloaded decks (simply loading from disk)
     pub async fn get_all_cached(cache: &PathBuf) -> Result<Vec<Self>> {
         let decks = Self::all_cached(cache).await?;
         Ok(decks)
     }
 
-    /// Lists all downloaded decks
-    ///
-    /// First updating and then loading them from disk
+    /// Lists all downloaded decks (first updating, then loading)
     pub async fn update_all_cached(cache: &PathBuf) -> Result<Vec<Self>> {
         let mut decks = Vec::new();
 
         for mut deck in Self::all_cached(cache).await? {
-            if let Ok(fetched) = Self::fetch(&deck.deckcode).await {
+            if let Ok(fetched) = Self::fetch(&deck.meta.deckcode).await {
                 fetched.save(cache).await?;
                 deck = fetched;
             }
@@ -185,13 +180,13 @@ impl Deck {
         Ok(decks)
     }
 
-    /// Get all extensions which are enabled in the `settings`
+    /// Get all decks which are enabled in the `settings`
     pub async fn get_enabled(cache: &Path, settings: &Settings) -> Result<Vec<Deck>> {
         let codes: Vec<&str> = settings
             .decks
             .iter()
-            .filter(|ds| ds.enabled)
-            .map(|ds| ds.deckcode.as_str())
+            .filter(|di| di.enabled)
+            .map(|di| di.meta.deckcode.as_str())
             .collect();
 
         let mut enabled = Vec::new();
@@ -266,55 +261,110 @@ impl BlackCard {
     }
 }
 
+#[derive(Deserialize, Debug)]
+struct CrCastApiResponse {
+    deck: CrCastResponse,
+}
+
 /// Matches the crcast JSON exactly
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct CrCastResponse {
     name: String,
-    watermark: String,
-    #[serde(rename = "calls")]
-    raw_blacks: Vec<RawBlackCard>,
-    #[serde(rename = "responses")]
-    raw_whites: Vec<RawWhiteCard>,
+    deckcode: String,
+    language: String,
+    #[serde(deserialize_with = "bool_from_int")]
+    nsfw: bool,
+    #[serde(rename = "blacks")]
+    raw_blacks: Vec<RawCard>,
+    #[serde(rename = "whites")]
+    raw_whites: Vec<RawCard>,
+    #[serde(rename = "blackCount")]
+    raw_blacks_count: usize,
+    #[serde(rename = "whiteCount")]
+    raw_whites_count: usize,
 }
 
-#[derive(Deserialize)]
-struct RawBlackCard {
-    pub text: Vec<String>,
+fn bool_from_int<'de, D>(deserializer: D) -> std::result::Result<bool, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let v = u8::deserialize(deserializer)?;
+    Ok(v == 1)
 }
 
-#[derive(Deserialize)]
-struct RawWhiteCard {
-    pub text: Vec<String>,
+#[derive(Deserialize, Debug)]
+struct RawCard {
+    pub text: String,
 }
 
-/// Turn a CrCastResponse into your Deck type
-impl From<CrCastResponse> for Deck {
-    fn from(api: CrCastResponse) -> Self {
-        let name = api.name;
-        let code = api.watermark;
-        let blacks = api
+/// Turn a CrCastApiResponse into your Deck type
+impl From<CrCastApiResponse> for Deck {
+    fn from(api: CrCastApiResponse) -> Self {
+        let deck = api.deck;
+
+        let blacks = deck
             .raw_blacks
             .into_iter()
-            .map(|rb| {
-                let text = rb.text.join(" _ ");
-                let fields = rb.text.len().saturating_sub(1);
+            .map(|rc| {
+                let (mut text, mut fields) = normalize_placeholders(&rc.text);
+                // Making sure that blacks without placeholders still have a field and a placeholder at the end
+                if fields == 0 {
+                    fields += 1;
+                    text.push_str(" _");
+                }
                 BlackCard { text, fields }
             })
             .collect();
 
-        let whites = api
+        let whites = deck
             .raw_whites
             .into_iter()
-            .filter_map(|rw| rw.text.into_iter().next())
-            .map(|t| WhiteCard { text: t })
+            .map(|rc| {
+                let (text, _) = normalize_placeholders(&rc.text);
+                WhiteCard { text }
+            })
             .collect();
 
         Deck {
-            name,
-            deckcode: code,
+            meta: DeckMeta {
+                name: deck.name,
+                deckcode: deck.deckcode,
+                language: deck.language,
+                nsfw: deck.nsfw,
+                blacks_count: deck.raw_blacks_count,
+                whites_count: deck.raw_whites_count,
+                fetched_at: empty_timestamp(),
+            },
             blacks,
             whites,
-            fetched_at: empty_timestamp(),
         }
     }
+}
+
+fn normalize_placeholders(text: &str) -> (String, usize) {
+    // If no placeholders, skip the upcomming loop
+    if !text.contains('_') {
+        return (text.to_owned(), 0);
+    }
+
+    let mut normalized = String::new();
+    let mut count = 0;
+    let mut in_blank = false;
+
+    for ch in text.chars() {
+        if ch == '_' {
+            if !in_blank {
+                // start of a new blank → insert one '_'
+                normalized.push('_');
+                count += 1;
+                in_blank = true;
+            }
+            // skip extra underscores
+        } else {
+            in_blank = false;
+            normalized.push(ch);
+        }
+    }
+
+    (normalized, count)
 }

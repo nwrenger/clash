@@ -34,6 +34,9 @@
 	let changes = $derived(
 		!areObjectsEqual(changable_settings, lobby?.settings) && !!changable_settings?.max_players
 	);
+	let sorted_decks = $derived(
+		changable_settings?.decks.toSorted((a, b) => a.meta.name.localeCompare(b.meta.name)) || []
+	);
 	$effect(() => {
 		shared.saving = changes || updating_decks;
 	});
@@ -53,8 +56,8 @@
 		let blacks = 0;
 		let whites = 0;
 		for (const deck of enabled_decks) {
-			blacks += deck.blacks_count;
-			whites += deck.whites_count;
+			blacks += deck.meta.blacks_count;
+			whites += deck.meta.whites_count;
 		}
 
 		return { blacks, whites };
@@ -151,10 +154,10 @@
 						<span>Decks</span>
 						<Tooltip description="Enable the card sets you want to include in the game" />
 					</span>
-					<span class="text-warning-500 flex items-center">
+					<span class="text-error-500 flex items-center">
 						<span>User Generated Content</span>
 						<Tooltip
-							preset="preset-filled-warning-500"
+							preset="preset-filled-error-500"
 							description="These decks are created and shared by other users; I do not review or endorse them"
 						/>
 					</span>
@@ -162,7 +165,7 @@
 
 				<!-- deck list -->
 				<div class="grid grid-cols-1 gap-1 sm:grid-cols-2">
-					{#each changable_settings.decks as deck (deck.deckcode)}
+					{#each sorted_decks as deck (deck.meta.deckcode)}
 						<div class="preset-tonal rounded-base">
 							<label
 								class="rounded-base {is_host
@@ -175,12 +178,31 @@
 									type="checkbox"
 									checked={deck.enabled}
 									onchange={() => (deck.enabled = !deck.enabled)}
-									title="{deck.enabled ? 'Disable' : 'Enable'} {deck.name}"
+									title="{deck.enabled ? 'Disable' : 'Enable'} {deck.meta.name}"
 								/>
 
 								<div class="min-w-0 flex-1">
-									<div class="flex">
-										<span class="truncate" title={deck.name}>{deck.name}</span>
+									<div class="flex justify-between space-x-1.5">
+										<span class="truncate" title={deck.meta.name}>{deck.meta.name}</span>
+										<span class="flex space-x-1.5">
+											{#if deck.meta.language && deck.meta.language != '-'}
+												{@const upper = deck.meta.language.toUpperCase()}
+												<span
+													class="badge preset-filled-surface-300-700 px-1.5 py-0.5 text-[10px] font-bold"
+													title="Language: {upper}"
+												>
+													{upper}
+												</span>
+											{/if}
+											{#if deck.meta.nsfw}
+												<span
+													class="badge preset-filled-error-500 px-1.5 py-0.5 text-[10px] font-bold"
+													title="Not Safe For Work"
+												>
+													NSFW
+												</span>
+											{/if}
+										</span>
 									</div>
 
 									<div
@@ -188,17 +210,17 @@
 									>
 										<a
 											class="anchor flex w-fit items-center text-xs"
-											href={'https://cast.clrtd.com/deck/' + deck.deckcode}
+											href={'https://cast.clrtd.com/deck/' + deck.meta.deckcode}
 											target="_blank"
 											rel="noreferrer"
 											onclick={(e) => e.stopPropagation()}
 											title="Open deck in browser"
 										>
-											<span>{deck.deckcode}</span>
+											<span>{deck.meta.deckcode}</span>
 											<ExternalLink size={18} class="pb-[2px] pl-1 opacity-60" />
 										</a>
-										<span title={new Date(deck.fetched_at * 1000).toLocaleString()}>
-											Updated {relativeTime(deck.fetched_at)}
+										<span title={new Date(deck.meta.fetched_at * 1000).toLocaleString()}>
+											Updated {relativeTime(deck.meta.fetched_at)}
 										</span>
 									</div>
 								</div>
