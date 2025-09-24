@@ -11,8 +11,10 @@
 
 	let { text_classes, card_classes, card, ...restProps }: Props = $props();
 
-	let is_image = $derived(card.text.startsWith('[img]') && card.text.endsWith('[/img]'));
-	let image_url = $derived(card.text.replace('[img]', '').replace('[/img]', ''));
+	let image = $derived({
+		found: card.text.startsWith('[img]') && card.text.endsWith('[/img]'),
+		url: card.text.replace('[img]', '').replace('[/img]', '')
+	});
 </script>
 
 <div
@@ -20,8 +22,8 @@
 	class="{card_classes} relative h-48 w-32 flex-shrink-0 transform cursor-pointer
 	rounded-xl shadow-sm transition-transform duration-300 ease-out select-none perspective-midrange hover:z-50"
 >
-	{#if is_image}
-		<ImageModal {image_url} />
+	{#if image.found}
+		<ImageModal image_url={image.url} />
 	{/if}
 
 	<!-- Card frame and holo pattern overlay -->
@@ -29,14 +31,17 @@
 
 	<!-- Card content -->
 	<div class="relative z-10 flex h-full flex-col items-center justify-center p-2">
-		{#if is_image}
-			<img src={image_url} alt={image_url} class="aspect-auto h-fit max-h-full w-fit max-w-full" />
+		{#if image.found}
+			<img src={image.url} alt={image.url} class="aspect-auto h-fit max-h-full w-fit max-w-full" />
 		{:else}
 			{@const text = card.text.replaceAll('\n', '<br/>')}
 			<span
-				class="{text_classes} {card.text.length > 95
-					? 'text-xs'
-					: 'text-sm'} text-center text-sm font-bold break-normal"
+				style="font-size: clamp(
+				    11px,
+				    calc(15px - (max(0, {card.text.length} - 95)) * 0.05px),
+				    15px
+				);"
+				class="{text_classes} text-center leading-snug font-bold text-balance break-normal hyphens-auto"
 			>
 				{@html text}
 			</span>
