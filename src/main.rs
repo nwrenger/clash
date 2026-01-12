@@ -12,7 +12,7 @@ use axum::{
 };
 use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
-use tokio::{signal, time::interval};
+use tokio::time::interval;
 use tower::ServiceBuilder;
 use tower_http::{
     compression::CompressionLayer,
@@ -125,9 +125,6 @@ async fn main() {
                 .into_inner(),
         );
 
-    let handle = axum_server::Handle::new();
-    let shut = shutdown_signal();
-
     let tcp = TcpListener::bind(&args.host).unwrap();
     let tls = RustlsConfig::from_pem_file(&args.cert, &args.key)
         .await
@@ -135,17 +132,11 @@ async fn main() {
 
     info!("Server started on \"{}\"", args.host);
 
-    let server = axum_server::from_tcp_rustls(tcp, tls)
-        .handle(handle.clone())
-        .serve(app.into_make_service());
-
-    tokio::select! {
-        () = shut =>
-            handle.graceful_shutdown(Some(Duration::from_secs(3))),
-        res = server => res.unwrap(),
-    }
-
-    // For future reference: Here can be stuff written which should happen after shutdown
+    axum_server::from_tcp_rustls(tcp, tls)
+        .unwrap()
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }
 
 /// Initialize tracing
@@ -154,9 +145,4 @@ fn logging() {
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()))
         .with(tracing_subscriber::fmt::layer())
         .init();
-}
-
-/// Waits for a shutdown signal (`ctrl` + `c`)
-async fn shutdown_signal() {
-    signal::ctrl_c().await.expect("Failed to listen for Ctrl+C");
 }

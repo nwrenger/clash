@@ -12,6 +12,8 @@
 			clearInterval(timer);
 		}
 	});
+	// svelte-ignore state_referenced_locally
+	// Change count only locally, allow overwrites by the server
 	let count = $state(time);
 </script>
 

@@ -13,6 +13,8 @@
 
 	let innerHeight = $state(0);
 	let smol = $derived(innerHeight < 800);
+	// svelte-ignore state_referenced_locally
+	// Change selectedIndex only locally, allow overwrites by the server
 	let selectedIndex = $state(round.result?.winning_card_index);
 	$effect(() => {
 		selectedIndex = round.result?.winning_card_index;
@@ -60,7 +62,7 @@
 
 {#snippet RevealedCards(classes?: string)}
 	{#each round.revealed_cards as pair, i}
-		<div class="group flex flex-shrink-0 cursor-pointer items-center {classes}">
+		<div class="group flex shrink-0 cursor-pointer items-center {classes}">
 			{#each pair as card}
 				<Card
 					{card}

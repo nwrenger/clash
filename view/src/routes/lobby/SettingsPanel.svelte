@@ -174,7 +174,7 @@
 							>
 								<input
 									disabled={!is_host}
-									class="checkbox checkbox-sm mt-[2px]"
+									class="checkbox checkbox-sm mt-0.5"
 									type="checkbox"
 									checked={deck.enabled}
 									onchange={() => (deck.enabled = !deck.enabled)}
@@ -217,7 +217,7 @@
 											title="Open deck in browser"
 										>
 											<span>{deck.meta.deckcode}</span>
-											<ExternalLink size={18} class="pb-[2px] pl-1 opacity-60" />
+											<ExternalLink size={18} class="pb-0.5 pl-1 opacity-60" />
 										</a>
 										<span title={new Date(deck.meta.fetched_at * 1000).toLocaleString()}>
 											Updated {relativeTime(deck.meta.fetched_at)}

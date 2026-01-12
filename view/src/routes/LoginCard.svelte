@@ -23,7 +23,7 @@
 	<div class="p-5 sm:p-7">
 		<form class="space-y-3" onsubmit={submit} aria-describedby="helper">
 			<label class="label">
-				<span class="label-text flex items-center justify-between pe-[41px]">
+				<span class="label-text flex items-center justify-between pe-10.25">
 					<span>Your nickname</span>
 					<span>
 						press <kbd class="kbd text-xs">↵</kbd> to {cta}

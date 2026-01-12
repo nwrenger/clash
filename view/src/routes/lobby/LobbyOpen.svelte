@@ -21,8 +21,6 @@
 
 	let { connection, lobby, own, disconnect }: Props = $props();
 
-	let tabs = $state('lobby');
-
 	let shared: Shared = $state({
 		saving: false,
 		valid_config: false
@@ -30,32 +28,31 @@
 </script>
 
 <div class="mx-auto flex h-full max-w-3xl flex-col items-center overflow-y-hidden px-4 pt-8">
-	<Tabs
-		value={tabs}
-		onValueChange={(e) => (tabs = e.value)}
-		fluid
-		composite
-		classes="h-full"
-		contentClasses="h-[calc(100%-53px)]"
-		listClasses="preset-tonal backdrop-blur-lg pt-2 px-2 !mb-0 rounded-md whitespace-nowrap"
-	>
-		{#snippet list()}
-			<Tabs.Control value="lobby" labelBase="btn hover:filter-none!">
-				{#snippet lead()}<House size="18" />{/snippet}
+	<Tabs class="h-full" defaultValue="lobby">
+		<Tabs.List class="preset-tonal mb-0! rounded-md px-2 pt-2 whitespace-nowrap backdrop-blur-lg">
+			<Tabs.Trigger
+				class="hover:text-surface-950-50 flex-1 hover:bg-transparent hover:opacity-75 hover:brightness-100"
+				value="lobby"
+			>
+				<House size="18" />
 				<span>Lobby</span>
-			</Tabs.Control>
-			<Tabs.Control value="settings" labelBase="btn hover:filter-none!">
-				{#snippet lead()}<Settings2 size="18" />{/snippet}
+			</Tabs.Trigger>
+			<Tabs.Trigger
+				class="hover:text-surface-950-50 flex-1 hover:bg-transparent hover:opacity-75 hover:brightness-100"
+				value="settings"
+			>
+				<Settings2 size="18" />
 				<span>Settings</span>
-			</Tabs.Control>
-		{/snippet}
-		{#snippet content()}
-			<Tabs.Panel classes="h-full" value="lobby">
+			</Tabs.Trigger>
+			<Tabs.Indicator />
+		</Tabs.List>
+		<div class="h-[calc(100%-53px)]">
+			<Tabs.Content class="h-full" value="lobby">
 				<LobbyPanel {connection} {lobby} {own} {disconnect} {shared} />
-			</Tabs.Panel>
-			<Tabs.Panel classes="h-full" value="settings">
+			</Tabs.Content>
+			<Tabs.Content class="h-full" value="settings">
 				<SettingsPanel {connection} {lobby} {own} bind:shared />
-			</Tabs.Panel>
-		{/snippet}
+			</Tabs.Content>
+		</div>
 	</Tabs>
 </div>

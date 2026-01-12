@@ -1,6 +1,6 @@
 [package]
 name = "clash"
-description = "Cards (live) against humanity"
+description = "Cards (Ludicrous Ones) Against Humanity"
 version = "0.1.0"
 authors = ["Nils Wrenger <nils@wrenger.net>"]
 edition = "2021"
@@ -10,43 +10,42 @@ repository = "https://github.com/nwrenger/clash"
 publish = false
 
 [dependencies]
-axum = { version = "0.8.4", features = [
+axum = { version = "0.8.8", features = [
     "ws",
     "tower-log",
     "tracing",
     "json",
 ], default-features = false }
-axum-server = { version = "0.7.2", features = [
+axum-server = { version = "0.8.0", features = [
     "tls-rustls-no-provider",
 ], default-features = false }
-clap = { version = "4.5.41", features = ["derive"] }
+clap = { version = "4.5.54", features = ["derive"] }
 futures = "0.3.31"
 rand = "0.9.2"
-reqwest = { version = "0.12.22", features = [
+reqwest = { version = "0.13.1", features = [
     "json",
     "charset",
     "http2",
     "system-proxy",
-    "rustls-tls",
+    "rustls",
 ], default-features = false }
-serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.140"
-tokio = { version = "1.46.1", features = [
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+tokio = { version = "1.49.0", features = [
     "sync",
-    "signal",
     "rt-multi-thread",
 ], default-features = false }
 tower = { version = "0.5.2", features = [
     "util",
     "timeout",
 ], default-features = false }
-tower-http = { version = "0.6.6", features = [
+tower-http = { version = "0.6.8", features = [
     "fs",
     "compression-deflate",
     "trace",
     "cors",
 ], default-features = false }
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-uuid = { version = "1.17.0", features = ["v4", "serde"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+uuid = { version = "1.19.0", features = ["v4", "serde"] }
 dashmap = { version = "6.1.0", features = ["inline"] }

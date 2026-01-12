@@ -96,21 +96,21 @@
 
 	<!-- feature bites -->
 	<div class="grid w-full max-w-5xl grid-cols-1 gap-4 pt-6 sm:grid-cols-2 md:grid-cols-4">
-		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-[2px]">
+		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-0.5">
 			<h3 class="font-semibold">Privacy First</h3>
 			<p>No tracking, no accounts. Pick a nick and play!</p>
 		</div>
 		<div
-			class="card preset-tonal space-y-1 p-5 transition will-change-transform hover:-translate-y-[2px]"
+			class="card preset-tonal space-y-1 p-5 transition will-change-transform hover:-translate-y-0.5"
 		>
 			<h3 class="font-semibold">Blazing rounds</h3>
 			<p>Minimal latency and snappy UI for chaotic fun.</p>
 		</div>
-		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-[2px]">
+		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-0.5">
 			<h3 class="font-semibold">Private lobbies</h3>
 			<p>Spin up a room and drop the link. Done!</p>
 		</div>
-		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-[2px]">
+		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-0.5">
 			<h3 class="font-semibold">Extensible</h3>
 			<p>House rules? Custom packs? Tweak away.</p>
 		</div>
