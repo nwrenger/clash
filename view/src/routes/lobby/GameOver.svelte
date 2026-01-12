@@ -48,10 +48,10 @@
 				<div class="flex flex-col items-center space-y-2">
 					<div
 						class="card {idx === 0
-							? 'bg-gradient-to-br from-yellow-300 to-yellow-600 text-white'
+							? 'bg-linear-to-br from-yellow-300 to-yellow-600 text-white'
 							: idx === 1
-								? 'bg-gradient-to-br from-gray-300 to-gray-500 text-gray-900'
-								: 'bg-gradient-to-br from-amber-600 to-orange-800 text-white'} flex w-28 flex-col items-center justify-center space-y-1 rounded-t-2xl py-4 shadow-lg sm:w-36 md:w-44"
+								? 'bg-linear-to-br from-gray-300 to-gray-500 text-gray-900'
+								: 'bg-linear-to-br from-amber-600 to-orange-800 text-white'} flex w-28 flex-col items-center justify-center space-y-1 rounded-t-2xl py-4 shadow-lg sm:w-36 md:w-44"
 						style="height: {idx === 0 ? '200px' : idx === 1 ? '160px' : '140px'}"
 					>
 						{#if idx === 0}
