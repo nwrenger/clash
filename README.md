@@ -24,7 +24,7 @@ cd clash
 # Firstly generate some certificates
 ./data/cert/gen.sh
 # Run Debug Build with frontend build
-cargo run -- localhost:8080 -f http://localhost:5173 --cache data/cache --cert data/cert/cert.pem --key data/cert/key.pem
+cargo run -- localhost:8080 -f http://localhost:5173 -c data/cache --cert data/cert/cert.pem --key data/cert/key.pem
 ```
 
 > The backend is also self-hosted at: [https://api.clash.nwrenger.dev/](https://api.clash.nwrenger.dev/)
