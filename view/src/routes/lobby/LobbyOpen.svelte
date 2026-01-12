@@ -31,14 +31,14 @@
 	<Tabs class="h-full" defaultValue="lobby">
 		<Tabs.List class="preset-tonal mb-0! rounded-md px-2 pt-2 whitespace-nowrap backdrop-blur-lg">
 			<Tabs.Trigger
-				class="hover:text-surface-950-50 flex-1 hover:bg-transparent hover:opacity-75 hover:brightness-100"
+				class="text-surface-950-50 flex-1 bg-transparent brightness-100 hover:opacity-75"
 				value="lobby"
 			>
 				<House size="18" />
 				<span>Lobby</span>
 			</Tabs.Trigger>
 			<Tabs.Trigger
-				class="hover:text-surface-950-50 flex-1 hover:bg-transparent hover:opacity-75 hover:brightness-100"
+				class="text-surface-950-50 flex-1 bg-transparent brightness-100 hover:opacity-75"
 				value="settings"
 			>
 				<Settings2 size="18" />

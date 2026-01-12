@@ -10,16 +10,19 @@
 	}
 
 	let { description, preset = 'preset-filled', icon = CircleQuestionMark }: Props = $props();
+	let open = $state(false);
 </script>
 
 <Tooltip
+	{open}
+	onOpenChange={(e) => (open = e.open)}
 	positioning={{ placement: 'top' }}
 	openDelay={50}
 	closeDelay={50}
 	closeOnClick={false}
 	closeOnPointerDown={false}
 >
-	<Tooltip.Trigger class="px-1">
+	<Tooltip.Trigger onclick={() => (open = !open)} class="px-1">
 		{@const Icon = icon}
 		<Icon size={14} strokeWidth="2px" />
 	</Tooltip.Trigger>
