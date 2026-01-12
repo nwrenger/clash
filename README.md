@@ -1,8 +1,8 @@
 # clash
 
-**Cards (Ludicrous Ones) Against Humanity (CLASH)** is an open‑source spin on Cards Against Humanity. Built in Rust and Svelte for offering a lightning‑fast online playground.
+**Cards (Ludicrous Ones) Against Humanity (clash)** is an open‑source spin on Cards Against Humanity. Built in Rust and Svelte for offering a lightning‑fast online playground.
 
-## Architecture
+## Project Structure
 
 ### [Backend](./) (Rust)
 
@@ -25,15 +25,15 @@
   - Hosted on GitHub Pages
   - Automatically rebuilt and published on every commit
 
-## Hosting & Scaling Limits
+## Performance & Scaling
 
-**CLASH** has been tested to handle up to **2–4 lobbies** with **5,000 players each**, or **10–30 lobbies** with **1,000 players each**, on typical modern server hardware ([Oracle's Ampere A1 in free tier](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm)).
+**clash** has been tested to handle up to **2–4 lobbies** with **5,000 players each**, or **10–30 lobbies** with **1,000 players each**, on typical modern server hardware ([Oracle's Ampere A1 in free tier](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm)).
 
 > ⚠️ **Note:** For very large lobbies (2,000+ players), browser performance becomes the primary bottleneck. Joining or updating lobbies with thousands of players can lag or freeze the UI, especially on lower-end devices.
 >
 > Actual capacity will vary depending on server CPU/RAM, network bandwidth, and client performance.
 
-We recommend keeping lobby sizes below 5,000 for the best experience.
+I recommend keeping lobby sizes below 5,000 for the best experience.
 
 ## Getting Started
 
@@ -85,7 +85,7 @@ bun run dev
 
 ## Contributing & Issues
 
-Although CLASH is out of **beta**, I still welcome:
+Although **clash** is out of **beta**, I still welcome:
 
 - Bug reports
 - Feature requests
