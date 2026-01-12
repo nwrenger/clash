@@ -2,6 +2,39 @@
 
 **Cards (Ludicrous Ones) Against Humanity (CLASH)** is an open‑source spin on Cards Against Humanity. Built in Rust and Svelte for offering a lightning‑fast online playground.
 
+## Architecture
+
+### [Backend](./) (Rust)
+
+- **Endpoints:**
+  - `[POST] /lobby` — Creates a new lobby and returns its UUID.
+  - `[ANY] /ws/:lobby_id` — WebSocket endpoint to join and interact with a lobby.
+- **Core:** Game state managed in-memory, clients communicate via WebSockets.
+- **Server:** Hosted centrally, responsible for message broadcasting and managing gameplay.
+
+### [Frontend](./view) (Svelte + Skeleton)
+
+- **Framework:** Svelte with Skeleton UI components.
+- **Features:**
+  - Create or join lobbies
+  - General game loop with game over screen
+  - Allowing custom decks from [clrtd](https://cast.clrtd.com/)
+  - Real‑time updates via WebSockets
+  - Responsive design for desktop and mobile
+- **Deployment:**
+  - Hosted on GitHub Pages
+  - Automatically rebuilt and published on every commit
+
+## Hosting & Scaling Limits
+
+**CLASH** has been tested to handle up to **2–4 lobbies** with **5,000 players each**, or **10–30 lobbies** with **1,000 players each**, on typical modern server hardware ([Oracle's Ampere A1 in free tier](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm)).
+
+> ⚠️ **Note:** For very large lobbies (2,000+ players), browser performance becomes the primary bottleneck. Joining or updating lobbies with thousands of players can lag or freeze the UI, especially on lower-end devices.
+>
+> Actual capacity will vary depending on server CPU/RAM, network bandwidth, and client performance.
+
+We recommend keeping lobby sizes below 5,000 for the best experience.
+
 ## Getting Started
 
 ### Prerequisites
@@ -49,39 +82,6 @@ bun run dev
 ```
 
 > The frontend is also hosted on GitHub Pages: [https://clash.nwrenger.dev/](https://clash.nwrenger.dev/)
-
-## Hosting & Scaling Limits
-
-**CLASH** has been tested to handle up to **2–4 lobbies** with **5,000 players each**, or **10–30 lobbies** with **1,000 players each**, on typical modern server hardware ([Oracle's Ampere A1 in free tier](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier_topic-Always_Free_Resources.htm)).
-
-> ⚠️ **Note:** For very large lobbies (2,000+ players), browser performance becomes the primary bottleneck. Joining or updating lobbies with thousands of players can lag or freeze the UI, especially on lower-end devices.
->
-> Actual capacity will vary depending on server CPU/RAM, network bandwidth, and client performance.
-
-We recommend keeping lobby sizes below 5,000 for the best experience.
-
-## Architecture
-
-### [Backend](./) (Rust)
-
-- **Endpoints:**
-  - `[POST] /lobby` — Creates a new lobby and returns its UUID.
-  - `[ANY] /ws/:lobby_id` — WebSocket endpoint to join and interact with a lobby.
-- **Core:** Game state managed in-memory, clients communicate via WebSockets.
-- **Server:** Hosted centrally, responsible for message broadcasting and managing gameplay.
-
-### [Frontend](./view) (Svelte + Skeleton)
-
-- **Framework:** Svelte with Skeleton UI components.
-- **Features:**
-  - Create or join lobbies
-  - General game loop with game over screen
-  - Allowing custom decks from [clrtd](https://cast.clrtd.com/)
-  - Real‑time updates via WebSockets
-  - Responsive design for desktop and mobile
-- **Deployment:**
-  - Hosted on GitHub Pages
-  - Automatically rebuilt and published on every commit
 
 ## Contributing & Issues
 
