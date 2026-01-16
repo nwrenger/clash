@@ -1,4 +1,4 @@
-import { persisted, type Persisted } from 'svelte-persisted-store';
+import { persistedState } from 'svelte-persisted-state';
 import type api from './api';
 
 export interface Session {
@@ -6,6 +6,6 @@ export interface Session {
 	credentials: api.Credentials;
 }
 
-export const session: Persisted<null | Session> = persisted('session', null, {
+export const session = persistedState<Session | null>('session', null, {
 	storage: 'session'
 });

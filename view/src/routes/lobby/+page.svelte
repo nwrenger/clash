@@ -102,9 +102,9 @@
 		lobby.id = page.url.searchParams.get('id') || '';
 
 		// Get stored data if already logged in
-		own.logged_in = $session?.lobby_id == lobby.id;
-		if ($session && own.logged_in) {
-			own.credentials = $session.credentials;
+		own.logged_in = session.current?.lobby_id == lobby.id;
+		if (session.current && own.logged_in) {
+			own.credentials = session.current.credentials;
 		}
 
 		connect();
@@ -385,7 +385,7 @@
 	function resetLogin() {
 		own.credentials = { name: '', id: crypto.randomUUID(), secret: crypto.randomUUID() };
 		own.logged_in = false;
-		$session = null;
+		session.current = null;
 	}
 
 	function removeState() {
@@ -432,7 +432,7 @@
 
 		// Send join only when the user explicitly presses Join
 		api.send_ws(connection.ws, { type: 'JoinLobby', data: { credentials: own.credentials } });
-		$session = { lobby_id: lobby.id as api.Uuid, credentials: own.credentials };
+		session.current = { lobby_id: lobby.id as api.Uuid, credentials: own.credentials };
 	}
 
 	function setPhase(phase: api.GamePhase) {

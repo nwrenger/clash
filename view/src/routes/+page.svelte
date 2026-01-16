@@ -22,7 +22,7 @@
 				secret: crypto.randomUUID()
 			};
 			const data = await handle_promise(api.create_lobby(credentials));
-			$session = { lobby_id: data.id, credentials };
+			session.current = { lobby_id: data.id, credentials };
 			await goto(`/lobby?id=${data.id}`);
 		} finally {
 			creating = false;
