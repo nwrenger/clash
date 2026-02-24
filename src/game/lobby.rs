@@ -26,6 +26,7 @@ use crate::{
         deck::{BlackCard, Deck, DeckInfo, WhiteCard},
         ClientLobby, Credentials, Player, PlayerInfo, PrivateServerEvent, ServerEvent, Settings,
     },
+    utils::all_unique,
     GRACE_PERIOD,
 };
 
@@ -552,26 +553,34 @@ impl Lobby {
 
     /// Start the game on a different thread
     pub async fn start_game(self: &Arc<Self>, player_id: &Uuid) -> Result<()> {
-        if self.is_host(player_id).await {
-            if self.has_phase(GamePhase::LobbyOpen).await
-                && self.min_players().await
-                && self.min_decks().await?
-            {
-                let lobby = self.clone();
-                let handle = tokio::spawn(async move {
-                    if let Err(e) = Lobby::run_game(lobby).await {
-                        error!("Game loop exited with error: {:?}", e);
-                    }
-                });
-                *self.game_task.write().await = Some(handle);
-
-                Ok(())
-            } else {
-                Err(Error::LobbyStart)
-            }
-        } else {
-            Err(Error::Unauthorized)
+        if !self.is_host(player_id).await {
+            return Err(Error::Unauthorized);
         }
+
+        if !self.has_phase(GamePhase::LobbyOpen).await
+            || !self.min_players().await
+            || !self.min_decks().await?
+        {
+            return Err(Error::LobbyStart);
+        }
+
+        // make sure no other task is running
+        let mut slot = self.game_task.write().await;
+        if let Some(h) = slot.as_ref() {
+            if !h.is_finished() {
+                return Err(Error::LobbyStart);
+            }
+        }
+
+        let lobby = self.clone();
+        let handle = tokio::spawn(async move {
+            if let Err(e) = Lobby::run_game(lobby).await {
+                error!("Game loop exited with error: {:?}", e);
+            }
+        });
+        *slot = Some(handle);
+
+        Ok(())
     }
 
     /// Main game loop
@@ -856,6 +865,11 @@ impl Lobby {
 
     /// Submit white cards
     pub async fn submit_cards(&self, player_id: &Uuid, indexes: Vec<usize>) -> Result<()> {
+        // check for double indexes
+        if !all_unique(&indexes) {
+            return Err(Error::CardSubmission);
+        }
+
         let in_phase = {
             let guard = self.state.read().await;
             guard.phase == GamePhase::Submitting
@@ -916,6 +930,7 @@ impl Lobby {
         if !is_czar
             || self.czar_submitted().await
             || self.state.read().await.phase != GamePhase::Judging
+            || !self.in_submitted_range(index).await
         {
             return Err(Error::CzarChoice);
         }
@@ -946,15 +961,22 @@ impl Lobby {
 
     pub async fn reset_game(&self, player_id: &Uuid) -> Result<()> {
         if self.is_host(player_id).await && self.has_phase(GamePhase::GameOver).await {
-            let mut guard = self.state.write().await;
-            guard.round = 0;
-            guard.phase = GamePhase::LobbyOpen;
-            for p in guard.players.values_mut() {
-                p.info.is_czar = false;
-                p.info.points = 0;
-                p.cards.clear();
+            // reset player state
+            {
+                let mut guard = self.state.write().await;
+                guard.round = 0;
+                guard.phase = GamePhase::LobbyOpen;
+                for p in guard.players.values_mut() {
+                    p.info.is_czar = false;
+                    p.info.points = 0;
+                    p.cards.clear();
+                }
             }
 
+            // clear the current game task
+            self.cancel_task().await;
+
+            // emit reset
             self.emit_global(ServerEvent::LobbyReset);
 
             Ok(())
@@ -1017,5 +1039,9 @@ impl Lobby {
     pub async fn all_player_submitted(&self) -> bool {
         let guard = self.state.read().await;
         guard.submissions.len() == guard.players.len().saturating_sub(1)
+    }
+
+    pub async fn in_submitted_range(&self, index: usize) -> bool {
+        index < self.state.read().await.submissions.len()
     }
 }

@@ -1,6 +1,7 @@
 pub mod error;
 pub mod game;
 pub mod server;
+pub mod utils;
 
 use std::{fs, net::TcpListener, path::PathBuf, sync::Arc, time::Duration};
 

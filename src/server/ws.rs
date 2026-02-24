@@ -76,7 +76,7 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
     };
 
     // Send broadcasted events over to the websocket
-    tokio::spawn(async move {
+    let sender_task = tokio::spawn(async move {
         loop {
             tokio::select! {
               Ok(event) = global.recv() => {
@@ -135,4 +135,6 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
 
     // Mark the player as disconnected
     lobby.player_disconnected(credentials.id).await;
+    // Close sender task
+    sender_task.abort();
 }
