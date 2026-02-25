@@ -5,7 +5,7 @@ version = "0.1.0"
 authors = ["Nils Wrenger <nils@wrenger.net>"]
 edition = "2021"
 readme = "README.md"
-license = "MIT"
+license = "GPL-3.0-or-later"
 repository = "https://github.com/nwrenger/clash"
 publish = false
 
