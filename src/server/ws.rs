@@ -8,7 +8,7 @@ use axum::{
 use futures::StreamExt;
 use futures::{stream::SplitSink, SinkExt};
 use serde::Serialize;
-use std::sync::Arc;
+use std::sync::{atomic::Ordering, Arc};
 use tokio::time::timeout;
 use uuid::Uuid;
 
@@ -26,7 +26,8 @@ pub async fn ws_handler(
     Path(uuid): Path<Uuid>,
 ) -> Result<Response> {
     if let Ok(lobby) = state.get_lobby(uuid) {
-        Ok(ws.on_upgrade(|socket| handle_socket(socket, lobby)))
+        let cloned_state = Arc::clone(&state);
+        Ok(ws.on_upgrade(|socket| handle_socket(socket, lobby, cloned_state)))
     } else {
         Err(Error::LobbyNotFound)
     }
@@ -42,7 +43,7 @@ where
 }
 
 /// Handles an individual WebSocket connection
-async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
+async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>, state: Arc<ServerState>) {
     let (mut sender, mut receiver) = socket.split();
 
     // Expect a player join event otherwise close the connection
@@ -74,6 +75,9 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
             lobby.subscribe_private(credentials.id).await,
         )
     };
+
+    // Increase player count
+    state.player_count.fetch_add(1, Ordering::SeqCst);
 
     // Send broadcasted events over to the websocket
     let sender_task = tokio::spawn(async move {
@@ -135,6 +139,8 @@ async fn handle_socket(socket: WebSocket, lobby: Arc<Lobby>) {
 
     // Mark the player as disconnected
     lobby.player_disconnected(credentials.id).await;
+    // Decrease player count
+    state.player_count.fetch_sub(1, Ordering::SeqCst);
     // Close sender task
     sender_task.abort();
 }

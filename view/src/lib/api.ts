@@ -23,6 +23,10 @@ namespace api {
 		secret: Uuid;
 	}
 
+	export interface Stats {
+		player_count: number;
+	}
+
 	export interface LobbyId {
 		id: Uuid;
 	}
@@ -42,7 +46,13 @@ namespace api {
 		}
 	}
 
-	// === REST call ===
+	// === REST calls ===
+
+	export async function stats(): Promise<Stats> {
+		return fetch_api(`${API_BASE}/stats`, {
+			method: 'GET'
+		});
+	}
 
 	export async function create_lobby(host: Credentials): Promise<LobbyId> {
 		return fetch_api(`${API_BASE}/lobby`, {

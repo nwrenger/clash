@@ -29,7 +29,9 @@
 
 <div class="mx-auto flex h-full max-w-3xl flex-col items-center overflow-y-hidden px-4 pt-8">
 	<Tabs class="h-full" defaultValue="lobby">
-		<Tabs.List class="preset-tonal mb-0! rounded-md px-2 pt-2 whitespace-nowrap backdrop-blur-lg">
+		<Tabs.List
+			class="preset-tonal text-surface-950-50 mb-0! rounded-md px-2 pt-2 whitespace-nowrap backdrop-blur-lg"
+		>
 			<Tabs.Trigger
 				class="text-surface-950-50 flex-1 bg-transparent brightness-100 hover:opacity-75"
 				value="lobby"

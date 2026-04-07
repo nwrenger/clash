@@ -40,7 +40,7 @@
 			>
 				<header class="flex items-center justify-between">
 					<Dialog.Title class="text-2xl font-bold">Adding a Deck</Dialog.Title>
-					<Dialog.CloseTrigger class="btn-icon hover:preset-tonal">
+					<Dialog.CloseTrigger class="btn-icon hover:text-surface-950-50 hover:preset-tonal">
 						<X class="size-4" />
 					</Dialog.CloseTrigger>
 				</header>
@@ -74,7 +74,9 @@
 					/>
 				</label>
 				<footer class="flex justify-end gap-2">
-					<Dialog.CloseTrigger class="btn preset-tonal">Cancel</Dialog.CloseTrigger>
+					<Dialog.CloseTrigger class="btn text-surface-950-50 preset-tonal"
+						>Cancel</Dialog.CloseTrigger
+					>
 					<button type="button" class="btn preset-filled" onclick={add} disabled={!deckcode.trim()}>
 						<Plus size={20} />
 						Add

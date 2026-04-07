@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use axum::{extract::State, Json};
@@ -16,6 +17,7 @@ pub mod ws;
 
 pub struct ServerState {
     pub lobbies: DashMap<Uuid, Arc<Lobby>>,
+    pub player_count: AtomicU64,
     pub cache: PathBuf,
 }
 
@@ -23,6 +25,7 @@ impl ServerState {
     pub fn new(cache: PathBuf) -> Self {
         Self {
             lobbies: DashMap::new(),
+            player_count: AtomicU64::new(0),
             cache,
         }
     }
@@ -78,6 +81,16 @@ impl Default for ServerState {
     fn default() -> Self {
         Self::new(PathBuf::new())
     }
+}
+
+#[derive(Serialize)]
+pub struct Stats {
+    player_count: u64,
+}
+
+pub async fn stats(State(state): State<Arc<ServerState>>) -> Result<Json<Stats>> {
+    let player_count = state.player_count.load(Ordering::SeqCst);
+    Ok(Json(Stats { player_count }))
 }
 
 #[derive(Serialize)]

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import api from '$lib/api';
-	import ShareButton from '$lib/components/ShareButton.svelte';
+	import ShareButton from '$lib/components/ui/ShareButton.svelte';
 	import { colorFromUUID, sortedEntries } from '$lib/utils';
 	import {
 		Ban,
@@ -83,7 +83,7 @@
 
 	<div class="sticky bottom-0 z-50 mb-8 flex w-full flex-col items-center justify-center">
 		<div
-			class="preset-tonal grid w-full gap-1.5 rounded-md p-2 backdrop-blur-lg {is_host
+			class="preset-tonal text-surface-950-50 grid w-full gap-1.5 rounded-md p-2 backdrop-blur-lg {is_host
 				? 'sm:grid-cols-3'
 				: 'sm:grid-cols-2'}"
 		>

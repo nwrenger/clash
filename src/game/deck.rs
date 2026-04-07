@@ -218,7 +218,7 @@ impl WhiteCard {
             let whites: Vec<WhiteCard> = decks
                 .iter()
                 .flat_map(|d| d.whites.iter())
-                .choose_multiple(&mut rng, count)
+                .sample(&mut rng, count)
                 .into_iter()
                 .cloned()
                 .collect();

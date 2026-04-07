@@ -1,6 +1,6 @@
 <script lang="ts">
 	import api from '$lib/api';
-	import Card from '$lib/components/Card.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
 	import type { Connection, Round } from './+page.svelte';
 
 	interface Props {

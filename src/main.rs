@@ -3,17 +3,17 @@ pub mod game;
 pub mod server;
 pub mod utils;
 
-use std::{fs, net::TcpListener, path::PathBuf, sync::Arc, time::Duration};
+use std::{fs, path::PathBuf, sync::Arc, time::Duration};
 
 use axum::{
     error_handling::HandleErrorLayer,
     http::{HeaderValue, StatusCode},
-    routing::{any, post},
+    routing::{any, get, post},
     BoxError, Router,
 };
 use axum_server::tls_rustls::RustlsConfig;
 use clap::Parser;
-use tokio::time::interval;
+use tokio::{net::TcpListener, time::interval};
 use tower::ServiceBuilder;
 use tower_http::{
     compression::CompressionLayer,
@@ -23,7 +23,7 @@ use tower_http::{
 use tracing::{error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-use crate::server::{create_lobby, ws::ws_handler, ServerState};
+use crate::server::{create_lobby, stats, ws::ws_handler, ServerState};
 
 /// General timeout interval is 30 Minutes
 pub const TIMEOUT_INTERVAL: Duration = Duration::from_secs(30 * 60);
@@ -102,6 +102,7 @@ async fn main() {
     }
 
     let app = Router::new()
+        .route("/stats", get(stats).with_state(state.clone()))
         .route("/ws/{uuid}", any(ws_handler).with_state(state.clone()))
         .route("/lobby", post(create_lobby).with_state(state))
         .layer(
@@ -126,7 +127,11 @@ async fn main() {
                 .into_inner(),
         );
 
-    let tcp = TcpListener::bind(&args.host).unwrap();
+    let tcp = TcpListener::bind(&args.host)
+        .await
+        .unwrap()
+        .into_std()
+        .unwrap();
     let tls = RustlsConfig::from_pem_file(&args.cert, &args.key)
         .await
         .unwrap();

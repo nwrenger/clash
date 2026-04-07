@@ -4,11 +4,11 @@
 	import { Check, Download, LoaderCircle, ExternalLink } from 'lucide-svelte';
 	import AddDeck from './AddDeck.svelte';
 	import type { Connection, Lobby, Own } from './+page.svelte';
-	import CahIcon from '$lib/components/CahIcon.svelte';
+	import CahIcon from '$lib/components/ui/CahIcon.svelte';
 	import { Tween } from 'svelte/motion';
-	import NumberInput from '$lib/components/NumberInput.svelte';
+	import NumberInput from '$lib/components/ui/NumberInput.svelte';
 	import type { Shared } from './LobbyOpen.svelte';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Tooltip from '$lib/components/ui/Tooltip.svelte';
 
 	interface Props {
 		connection: Connection;
@@ -166,10 +166,10 @@
 				<!-- deck list -->
 				<div class="grid grid-cols-1 gap-1 sm:grid-cols-2">
 					{#each sorted_decks as deck (deck.meta.deckcode)}
-						<div class="preset-tonal rounded-base">
+						<div class="preset-tonal text-surface-950-50 rounded-base">
 							<label
 								class="rounded-base {is_host
-									? 'hover:preset-tonal cursor-pointer'
+									? 'hover:text-surface-950-50 hover:preset-tonal cursor-pointer'
 									: ''} flex items-start gap-3 p-3 transition select-none"
 							>
 								<input
@@ -400,7 +400,7 @@
 
 			{#if is_host}
 				<div class="sticky bottom-0 z-50 mb-8 flex w-full justify-center">
-					<span class="badge preset-tonal backdrop-blur-lg">
+					<span class="badge text-surface-950-50 preset-tonal backdrop-blur-lg">
 						{#if auto_save.active}
 							<LoaderCircle class="animate-spin" size={16} />
 							Applying in {(auto_save.remaining / 1000).toFixed(1)}s...

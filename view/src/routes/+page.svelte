@@ -3,11 +3,23 @@
 	import api from '$lib/api';
 	import { session } from '$lib/state';
 	import { handle_promise } from '$lib/toaster';
-	import { LoaderCircle, Plus, Sparkles, Github, ExternalLink } from 'lucide-svelte';
+	import { LoaderCircle, Plus, Gamepad, ExternalLink } from 'lucide-svelte';
 	import LoginCard from './LoginCard.svelte';
+	import { onMount } from 'svelte';
+	import GitHub from '$lib/components/icons/GitHub.svelte';
 
+	const nf = new Intl.NumberFormat();
+	let stats: Promise<api.Stats> | undefined = $state(undefined);
 	let name: string = $state('');
 	let creating = $state(false);
+
+	// Get stats
+	onMount(() => {
+		stats = api.stats();
+
+		// Refresh every 30s
+		setInterval(() => (stats = api.stats()), 30_000);
+	});
 
 	async function createLobby(e: Event) {
 		if (!name.trim() || creating) return;
@@ -46,8 +58,25 @@
 
 <div class="mx-auto flex w-full max-w-3xl flex-col items-center space-y-4 px-4 py-8 sm:py-14">
 	<!-- hero -->
-	<div class="badge preset-tonal flex-wrap rounded-full">
-		<span class="inline-flex items-center gap-1"><Sparkles size={14} /> now live</span>
+	<div class="badge text-surface-950-50 preset-tonal flex-wrap rounded-full">
+		<span class="inline-flex items-center gap-1">
+			<Gamepad size={14} />
+			{#key stats}
+				{#if stats}
+					{#await stats}
+						loading...
+					{:then stats}
+						{#if stats.player_count === 0}
+							first one here
+						{:else}
+							{nf.format(stats.player_count)} online
+						{/if}
+					{/await}
+				{:else}
+					loading...
+				{/if}
+			{/key}
+		</span>
 		<span class="mx-2 opacity-40">•</span>
 		<span>privacy-friendly</span>
 	</div>
@@ -80,9 +109,9 @@
 		<a
 			href="https://github.com/nwrenger/clash"
 			target="_blank"
-			class="btn preset-tonal h-9 w-full sm:w-auto"
+			class="btn text-surface-950-50 preset-tonal h-9 w-full sm:w-auto"
 		>
-			<Github size={18} />
+			<GitHub size={18} />
 			Star on GitHub
 			<ExternalLink size={16} class="opacity-60" />
 		</a>
@@ -96,21 +125,27 @@
 
 	<!-- feature bites -->
 	<div class="grid w-full max-w-5xl grid-cols-1 gap-4 pt-6 sm:grid-cols-2 md:grid-cols-4">
-		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-0.5">
+		<div
+			class="card text-surface-950-50 preset-tonal space-y-1 p-5 transition hover:-translate-y-0.5"
+		>
 			<h3 class="font-semibold">Privacy First</h3>
 			<p>No tracking, no accounts. Pick a nick and play!</p>
 		</div>
 		<div
-			class="card preset-tonal space-y-1 p-5 transition will-change-transform hover:-translate-y-0.5"
+			class="card text-surface-950-50 preset-tonal space-y-1 p-5 transition will-change-transform hover:-translate-y-0.5"
 		>
 			<h3 class="font-semibold">Blazing rounds</h3>
 			<p>Minimal latency and snappy UI for chaotic fun.</p>
 		</div>
-		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-0.5">
+		<div
+			class="card text-surface-950-50 preset-tonal space-y-1 p-5 transition hover:-translate-y-0.5"
+		>
 			<h3 class="font-semibold">Private lobbies</h3>
 			<p>Spin up a room and drop the link. Done!</p>
 		</div>
-		<div class="card preset-tonal space-y-1 p-5 transition hover:-translate-y-0.5">
+		<div
+			class="card text-surface-950-50 preset-tonal space-y-1 p-5 transition hover:-translate-y-0.5"
+		>
 			<h3 class="font-semibold">Extensible</h3>
 			<p>House rules? Custom packs? Tweak away.</p>
 		</div>

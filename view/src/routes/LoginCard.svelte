@@ -19,7 +19,9 @@
 	}
 </script>
 
-<div class="card preset-tonal mx-auto w-full max-w-xl overflow-hidden rounded-2xl">
+<div
+	class="card text-surface-950-50 preset-tonal mx-auto w-full max-w-xl overflow-hidden rounded-2xl"
+>
 	<div class="p-5 sm:p-7">
 		<form class="space-y-3" onsubmit={submit} aria-describedby="helper">
 			<label class="label">
@@ -44,7 +46,7 @@
 					/>
 					<button
 						type="button"
-						class="btn-icon preset-tonal"
+						class="btn-icon text-surface-950-50 preset-tonal"
 						title="Surprise me!"
 						aria-label="Generate a random nickname"
 						onclick={randomName}

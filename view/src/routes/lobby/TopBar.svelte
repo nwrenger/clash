@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Countdown from '$lib/components/Countdown.svelte';
+	import Countdown from '$lib/components/ui/Countdown.svelte';
 	import { colorFromUUID, sortedEntries } from '$lib/utils';
 	import { Crown, Gavel, UserRound } from 'lucide-svelte';
 	import type { Connection, Lobby, Own, Round } from './+page.svelte';

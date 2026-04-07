@@ -19,7 +19,9 @@
 	{#if loading}
 		<p class="text-center">Loading...</p>
 	{:else}
-		<div class="preset-tonal grid w-full gap-1.5 rounded-md p-2 backdrop-blur-lg sm:grid-cols-2">
+		<div
+			class="preset-tonal text-surface-950-50 grid w-full gap-1.5 rounded-md p-2 backdrop-blur-lg sm:grid-cols-2"
+		>
 			<button class="btn preset-filled-primary-500 h-fit w-full" onclick={connect}>
 				<RefreshCw size={20} />
 				Reconnect

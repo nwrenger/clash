@@ -117,7 +117,7 @@
 
 	{#if lobby!.players![own.credentials.id]?.is_host}
 		<div class="sticky bottom-0 z-50 flex w-full flex-col items-center justify-center">
-			<div class="preset-tonal w-fit rounded-md p-2 backdrop-blur-lg">
+			<div class="preset-tonal text-surface-950-50 w-fit rounded-md p-2 backdrop-blur-lg">
 				<button class="btn preset-filled-primary-500" onclick={reset_game}>
 					<RotateCw size={20} />
 					Restart Game
