@@ -7,6 +7,7 @@
 ### [Backend](./) (Rust)
 
 - **Endpoints:**
+  - `[GET] /stats` — Gets current stats, like the live player count.
   - `[POST] /lobby` — Creates a new lobby and returns its UUID.
   - `[ANY] /ws/:lobby_id` — WebSocket endpoint to join and interact with a lobby.
 - **Core:** Game state managed in-memory, clients communicate via WebSockets.
@@ -16,6 +17,7 @@
 
 - **Framework:** Svelte with Skeleton UI components.
 - **Features:**
+  - Get stats about the current load
   - Create or join lobbies
   - General game loop with game over screen
   - Allowing custom decks from [clrtd](https://cast.clrtd.com/)
