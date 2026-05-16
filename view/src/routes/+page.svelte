@@ -71,6 +71,8 @@
 						{:else}
 							{nf.format(stats.player_count)} online
 						{/if}
+					{:catch}
+						error loading
 					{/await}
 				{:else}
 					loading...
