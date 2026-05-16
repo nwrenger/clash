@@ -21,6 +21,11 @@
 		setInterval(() => (stats = api.stats()), 30_000);
 	});
 
+	function playerDisplay(count: number) {
+		if (count === 1) return `1 player`;
+		return `${nf.format(count)} players`;
+	}
+
 	async function createLobby(e: Event) {
 		if (!name.trim() || creating) return;
 
@@ -66,11 +71,7 @@
 					{#await stats}
 						loading...
 					{:then stats}
-						{#if stats.player_count === 0}
-							first one here
-						{:else}
-							{nf.format(stats.player_count)} online
-						{/if}
+						{nf.format(stats.player_count)} in-game
 					{:catch}
 						error loading
 					{/await}
