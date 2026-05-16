@@ -151,7 +151,13 @@
 		</div>
 	</div>
 
-	<div class="pt-4 text-center text-xs">
-		<a href="https://nwrenger.dev/privacy-policy" class="anchor">Privacy Policy</a>
+	<div class="flex flex-col items-center justify-center gap-2 pt-4 text-xs">
+		<a href="https://nwrenger.dev/privacy-policy" class="anchor"> Privacy Policy </a>
+		<a
+			href="https://clash.betteruptime.com"
+			target="_blank"
+			rel="noopener noreferrer"
+			class="anchor">Status</a
+		>
 	</div>
 </div>
