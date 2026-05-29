@@ -46,7 +46,7 @@
 				</header>
 				<Dialog.Description>
 					<p>
-						To add a custom deck, please visit the
+						To add a custom deck, visit the
 						<a
 							class="anchor"
 							href="https://cast.clrtd.com/"
@@ -55,8 +55,7 @@
 							title="Open clrtd website"
 						>
 							clrtd website
-						</a>
-						its deck code, and paste it here.
+						</a>, choose the deck you want to use, copy its deck code, and paste it here.
 					</p>
 				</Dialog.Description>
 				<label class="label">
