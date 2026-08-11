@@ -97,4 +97,4 @@ Please open issues or PRs on [GitHub](https://github.com/nwrenger/clash/issues).
 
 ## License
 
-This project is licensed under the **GPLv3 License**. See [LICENSE](./LICENSE) for details.
+This project is licensed under the **AGPLv3 License**. See [LICENSE](./LICENSE) for details.
